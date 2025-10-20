@@ -1,0 +1,72 @@
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chọn câu học</title>
+    <style>
+        body {
+            background-color: #000000;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script>
+        // Lấy danh sách câu ưu tiên - TỐI ƯU TỐC ĐỘ
+        function getPrioritySentences(vocabularies) {
+            const now = Date.now();
+            const sentencesByLevel = {};
+            
+            // Lọc câu đã tới hạn và phân loại level
+            for (const v of vocabularies) {
+                if (v.nt && v.nt > now) continue;
+                
+                const level = v.l || 0;
+                if (!sentencesByLevel[level]) sentencesByLevel[level] = [];
+                
+                const hoursOverdue = v.nt ? Math.floor((now - v.nt) / 3600000) : 0;
+                sentencesByLevel[level].push({
+                    ...v,
+                    hoursOverdue: hoursOverdue > 0 ? hoursOverdue : 0
+                });
+            }
+            
+            // Sắp xếp ưu tiên: level 1 → 2 → 3 → ... → 0
+            const priorityOrder = [];
+            const levelOrder = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+            
+            for (const level of levelOrder) {
+                if (sentencesByLevel[level]) {
+                    // Sắp xếp theo thời gian quá hạn (nhiều nhất trước)
+                    sentencesByLevel[level].sort((a, b) => b.hoursOverdue - a.hoursOverdue);
+                    priorityOrder.push(...sentencesByLevel[level]);
+                }
+            }
+            
+            return priorityOrder;
+        }
+
+        // Khởi tạo và chọn câu ngay lập tức
+        function init() {
+            const vocabularies = JSON.parse(localStorage.getItem('vocabularies') || '[]');
+            const prioritySentences = getPrioritySentences(vocabularies);
+            
+            if (prioritySentences.length === 0) {
+                // Không có câu nào - chuyển về trang chủ
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Lấy câu ưu tiên nhất và chuyển ngay đến type.html
+            const nextSentence = prioritySentences[0];
+            const encodedSentence = encodeURIComponent(JSON.stringify(nextSentence));
+            window.location.href = `type.html?sentence=${encodedSentence}&auto=true`;
+        }
+
+        // Chạy ngay khi trang load
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</head>
+<body>
+</body>
+</html>

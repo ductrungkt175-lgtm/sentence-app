@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lưu kết quả</title>
+    <style>
+        body {
+            background-color: #000000;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script>
+        // Lấy tham số từ URL
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Tính thời gian học tiếp theo
+        function calculateNextTime(level) {
+            const now = Date.now();
+            const minute = 60 * 1000;
+            const hour = 60 * minute;
+            const day = 24 * hour;
+            
+            const intervals = {
+                1: 0,
+                2: 15 * minute,
+                3: 1 * day,
+                4: 1 * day,
+                5: 3 * day,
+                6: 7 * day,
+                7: 20 * day,
+                8: 30 * day,
+                9: 90 * day,
+                10: 180 * day
+            };
+            
+            return now + (level in intervals ? intervals[level] : intervals[10]);
+        }
+
+        // Cập nhật dữ liệu vocabulary và thống kê
+        function updateVocabulary() {
+            const sentenceParam = getUrlParam('sentence');
+            const result = getUrlParam('result');
+            
+            if (!sentenceParam || !result) return null;
+            
+            try {
+                const currentSentence = JSON.parse(decodeURIComponent(sentenceParam));
+                const vocabularies = JSON.parse(localStorage.getItem('vocabularies') || '[]');
+                const now = Date.now();
+                let updated = false;
+                let newLevel = null;
+                
+                const updatedVocabularies = vocabularies.map(vocab => {
+                    const isMatch = 
+                        (vocab.en === currentSentence.en || vocab.w === currentSentence.en) &&
+                        (vocab.vn === currentSentence.vn || vocab.m === currentSentence.vn);
+                    
+                    if (isMatch) {
+                        updated = true;
+                        if (result === 'perfect') {
+                            newLevel = (vocab.l || 0) + 1;
+                            vocab.l = newLevel;
+                            vocab.nt = calculateNextTime(newLevel);
+                        } else {
+                            newLevel = 1;
+                            vocab.l = newLevel;
+                            vocab.nt = now;
+                        }
+                        vocab.lt = now;
+                    }
+                    return vocab;
+                });
+                
+                if (updated) {
+                    localStorage.setItem('vocabularies', JSON.stringify(updatedVocabularies));
+                    
+                    // Cập nhật thống kê phiên học
+                    updateSessionStats(newLevel);
+                    
+                    return newLevel;
+                }
+            } catch (error) {
+                console.error('Lỗi khi lưu kết quả:', error);
+            }
+            
+            return null;
+        }
+
+        // Cập nhật thống kê phiên học
+        function updateSessionStats(newLevel) {
+            let sessionStats = JSON.parse(sessionStorage.getItem('sessionStats') || '{}');
+            
+            // Tăng số câu cho level tương ứng
+            sessionStats[newLevel] = (sessionStats[newLevel] || 0) + 1;
+            
+            sessionStorage.setItem('sessionStats', JSON.stringify(sessionStats));
+        }
+
+        // Khởi tạo
+        function init() {
+            // Cập nhật dữ liệu ngay lập tức
+            updateVocabulary();
+            
+            // Chuyển hướng ngay đến choose.html
+            window.location.href = 'choose.html?auto=true';
+        }
+
+        // Chạy khi trang load
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</head>
+<body>
+</body>
+</html>

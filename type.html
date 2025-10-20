@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Typing Sentence</title>
+    <title>Luyện gõ câu</title>
     <style>
         * {
             box-sizing: border-box;
@@ -42,6 +42,14 @@
             font-weight: 300;
             letter-spacing: 1px;
         }
+
+        .session-stats {
+            text-align: center;
+            color: #888;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            min-height: 20px;
+        }
         
         .instruction {
             text-align: center;
@@ -78,7 +86,7 @@
             background: #555;
             border-color: #777;
         }
-        
+
         .dropdown {
             position: relative;
             display: inline-block;
@@ -208,12 +216,13 @@
         
         .hidden-input {
             position: absolute;
+            left: -1000px;
+            width: 1px;
+            height: 1px;
             opacity: 0;
             pointer-events: none;
-            height: 0;
-            width: 0;
         }
-        
+
         .next-btn {
             width: 100%;
             padding: 18px;
@@ -226,6 +235,7 @@
             transition: background 0.3s;
             font-weight: 500;
             letter-spacing: 0.5px;
+            margin-top: 20px;
         }
         
         .next-btn:hover {
@@ -238,38 +248,6 @@
         
         .hidden {
             display: none;
-        }
-
-        .no-data-message {
-            color: #666;
-            text-align: center;
-            padding: 40px 20px;
-            font-style: italic;
-            border: 1px solid #333;
-            border-radius: 10px;
-            background: #1a1a1a;
-            margin-bottom: 20px;
-        }
-
-        .no-data-message button {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background: #2196f3;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .completion-message {
-            color: #4caf50;
-            text-align: center;
-            padding: 20px;
-            font-size: 1.2rem;
-            border: 1px solid #4caf50;
-            border-radius: 10px;
-            background: #1a331a;
-            margin-bottom: 20px;
         }
 
         @media (max-width: 480px) {
@@ -302,34 +280,15 @@
                 font-size: 1.2rem;
             }
         }
-
-        @media (max-width: 350px) {
-            .controls {
-                gap: 8px;
-            }
-            
-            .control-btn {
-                padding: 8px 12px;
-                font-size: 0.85rem;
-                min-width: 45px;
-            }
-            
-            .input-display {
-                font-size: 1.3rem;
-            }
-            
-            .word {
-                padding: 6px 10px;
-                min-width: 45px;
-            }
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Typing Sentence</h1>
+            <h1>Luyện gõ câu</h1>
         </header>
+        
+        <div class="session-stats" id="sessionStats"></div>
         
         <div class="instruction">Gõ chữ cái đầu tiên của từng từ</div>
         
@@ -348,7 +307,7 @@
                 </div>
             </div>
             <button class="control-btn" id="speakBtn">🔊</button>
-            <button class="control-btn" id="statsBtn">📊</button>
+            <button class="control-btn" id="homeBtn">🏠</button>
         </div>
         
         <div class="display-area">
@@ -359,27 +318,24 @@
         
         <div class="typing-area">
             <div class="input-display" id="inputDisplay"></div>
+            <input type="text" id="hiddenInput" class="hidden-input" autocomplete="off" spellcheck="false">
             
-            <!-- Input ẩn để hiện bàn phím trên mobile -->
-            <input type="text" id="hiddenInput" class="hidden-input">
-            
-            <button class="next-btn" id="nextSentenceBtn">Next Sentence</button>
+            <button class="next-btn hidden" id="nextBtn">Next Sentence</button>
         </div>
     </div>
 
     <script>
         // Biến toàn cục
-        let currentSentenceIndex = 0;
+        let currentSentence = null;
         let currentWords = [];
         let currentFirstLetters = [];
-        let userProgress = [];
-        let resultProgress = []; // THÊM: Lưu kết quả đúng/sai từng từ (1=đúng, 0=sai)
+        let resultProgress = [];
+        let currentWordIndex = 0;
         let isVnVisible = false;
         let isEnVisible = false;
-        let speechRate = 1.0;
-        let currentWordIndex = 0;
-        let sentences = [];
-        let currentVocabulary = null;
+        let speechRate = parseFloat(localStorage.getItem('speechRate') || '1.0');
+        let isCompleted = false;
+        let hasSpoken = false; // Thêm biến để theo dõi đã đọc chưa
 
         // DOM Elements
         const meaningElement = document.getElementById('meaning');
@@ -388,34 +344,83 @@
         const inputDisplayElement = document.getElementById('inputDisplay');
         const hiddenInput = document.getElementById('hiddenInput');
         const speakBtn = document.getElementById('speakBtn');
-        const nextSentenceBtn = document.getElementById('nextSentenceBtn');
         const vnBtn = document.getElementById('vnBtn');
         const enBtn = document.getElementById('enBtn');
+        const homeBtn = document.getElementById('homeBtn');
+        const sessionStatsElement = document.getElementById('sessionStats');
+        const nextBtn = document.getElementById('nextBtn');
         const speedBtn = document.getElementById('speedBtn');
-        const statsBtn = document.getElementById('statsBtn');
-        const speedOptions = document.querySelectorAll('.dropdown-content button');
         const dropdown = document.querySelector('.dropdown');
+        const speedOptions = document.querySelectorAll('.dropdown-content button');
+
+        // Lấy tham số từ URL
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Hiển thị thống kê phiên học
+        function updateSessionStatsDisplay() {
+            const sessionStats = JSON.parse(sessionStorage.getItem('sessionStats') || '{}');
+            
+            // Tính tổng số câu đã học
+            const totalSentences = Object.values(sessionStats).reduce((sum, count) => sum + count, 0);
+            
+            if (totalSentences === 0) {
+                sessionStatsElement.textContent = 'Chưa có câu nào được học trong phiên này';
+                return;
+            }
+            
+            // Tạo chuỗi thống kê
+            const statsParts = [];
+            const levels = Object.keys(sessionStats).sort((a, b) => a - b);
+            
+            for (const level of levels) {
+                statsParts.push(`Lv${level}: ${sessionStats[level]} câu`);
+            }
+            
+            sessionStatsElement.textContent = `Phiên học: ${totalSentences} câu (${statsParts.join(', ')})`;
+        }
 
         // Khởi tạo ứng dụng
-        async function initApp() {
-            await loadSentences();
-            
+        function initApp() {
+            // Lấy câu từ URL parameter
+            const sentenceParam = getUrlParam('sentence');
+            if (!sentenceParam) {
+                showError('Không có dữ liệu câu');
+                return;
+            }
+
+            try {
+                currentSentence = JSON.parse(decodeURIComponent(sentenceParam));
+                loadSentence();
+            } catch (error) {
+                showError('Dữ liệu câu không hợp lệ');
+                return;
+            }
+
+            // Cập nhật tốc độ đọc
+            speedBtn.textContent = `${speechRate}x`;
+
             // Thêm event listeners
             document.addEventListener('keydown', handleKeyPress);
             inputDisplayElement.addEventListener('click', focusHiddenInput);
             speakBtn.addEventListener('click', speakSentence);
-            nextSentenceBtn.addEventListener('click', nextSentence);
             vnBtn.addEventListener('click', toggleVnDisplay);
             enBtn.addEventListener('click', toggleEnDisplay);
-            statsBtn.addEventListener('click', showStats);
-            speedBtn.addEventListener('click', toggleDropdown);
+            homeBtn.addEventListener('click', goToHome);
+            nextBtn.addEventListener('click', goToNextSentence);
             
+            // Xử lý input ẩn
+            hiddenInput.addEventListener('input', handleHiddenInput);
+
             // Speed options
             speedOptions.forEach(option => {
                 option.addEventListener('click', function(e) {
                     e.stopPropagation();
                     speechRate = parseFloat(this.getAttribute('data-speed'));
                     speedBtn.textContent = `${speechRate}x`;
+                    localStorage.setItem('speechRate', speechRate.toString());
                     dropdown.classList.remove('active');
                 });
             });
@@ -427,364 +432,200 @@
                 }
             });
             
-            // Xử lý input ẩn
-            hiddenInput.addEventListener('input', handleHiddenInput);
-            hiddenInput.addEventListener('blur', function() {
-                setTimeout(() => hiddenInput.focus(), 100);
+            // Toggle dropdown
+            speedBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
             });
 
-            // Kiểm tra nếu không có dữ liệu
-            if (sentences.length === 0) {
-                showNoDataMessage();
-            } else {
-                loadSentence(currentSentenceIndex);
-            }
-        }
+            // Hiển thị thống kê
+            updateSessionStatsDisplay();
 
-        // Load sentences với quy tắc chọn câu mới
-        async function loadSentences() {
-            const savedVocabularies = localStorage.getItem('vocabularies');
-            
-            if (savedVocabularies) {
-                const vocabularies = JSON.parse(savedVocabularies);
-                sentences = getPrioritySentences(vocabularies);
-            } else {
-                sentences = [];
-            }
-        }
-
-        // QUY TẮC CHỌN CÂU MỚI - CHỈ câu đã tới hạn
-        function getPrioritySentences(vocabularies) {
-            const now = Date.now();
-            const sentencesByLevel = {};
-            
-            // 1. Chỉ lấy câu ĐÃ TỚI HẠN (nt <= now) hoặc không có nt
-            const dueVocabularies = vocabularies.filter(v => !v.nt || v.nt <= now);
-            
-            // 2. Phân loại theo level và tính giờ quá hạn
-            dueVocabularies.forEach(v => {
-                const level = v.l || 0;
-                if (!sentencesByLevel[level]) sentencesByLevel[level] = [];
-                
-                const hoursOverdue = Math.floor((now - (v.nt || now)) / (1000 * 60 * 60));
-                sentencesByLevel[level].push({
-                    ...v,
-                    hoursOverdue: hoursOverdue > 0 ? hoursOverdue : 0
-                });
-            });
-            
-            // 3. Sắp xếp ưu tiên trong từng level: quá hạn nhiều giờ hơn trước
-            Object.keys(sentencesByLevel).forEach(level => {
-                sentencesByLevel[level].sort((a, b) => b.hoursOverdue - a.hoursOverdue);
-            });
-            
-            // 4. Gom câu theo thứ tự ưu tiên level: 1 → 2 → 3 → ... → 0
-            const priorityOrder = [];
-            
-            // Level 1 trước
-            if (sentencesByLevel[1]) {
-                priorityOrder.push(...sentencesByLevel[1]);
-            }
-            
-            // Level 2, 3, 4... 
-            [2, 3, 4, 5, 6, 7, 8, 9].forEach(level => {
-                if (sentencesByLevel[level]) {
-                    priorityOrder.push(...sentencesByLevel[level]);
-                }
-            });
-            
-            // Level 0 cuối cùng (chỉ nếu còn slot)
-            if (sentencesByLevel[0]) {
-                priorityOrder.push(...sentencesByLevel[0]);
-            }
-            
-            return priorityOrder;
-        }
-
-        // Tính thời gian học tiếp theo dựa trên level
-        function calculateNextTime(level) {
-            const now = Date.now();
-            const minute = 60 * 1000;
-            const hour = 60 * minute;
-            const day = 24 * hour;
-            
-            const intervals = {
-                1: 0,               // NGAY LẬP TỨC
-                2: 15 * minute,     // 15 phút
-                3: 1 * day,         // 1 ngày
-                4: 1 * day,         // 1 ngày
-                5: 3 * day,         // 3 ngày
-                6: 7 * day,         // 7 ngày
-                7: 20 * day,        // 20 ngày
-                8: 30 * day,        // 30 ngày
-                9: 90 * day,        // 90 ngày
-                10: 180 * day       // 180 ngày
-            };
-            
-            return now + (intervals[level] || intervals[10]);
+            // Focus input ẩn sau 1 giây
+            setTimeout(focusHiddenInput, 1000);
         }
 
         // Tải câu hiện tại
-        
-function loadSentence(index) {
-    if (sentences.length === 0) return;
+        function loadSentence() {
+            isCompleted = false;
+            hasSpoken = false; // Reset trạng thái đã đọc
+            nextBtn.classList.add('hidden');
 
-    currentSentenceIndex = index;
-    const sentence = sentences[index];
-    currentVocabulary = sentence;
+            meaningElement.textContent = currentSentence.vn || currentSentence.m || '';
+            fullSentenceElement.textContent = currentSentence.en || currentSentence.w || '';
+            phoneticElement.textContent = currentSentence.po || currentSentence.p || '';
 
-    meaningElement.textContent = sentence.vn || sentence.m || '';
-    fullSentenceElement.textContent = sentence.en || sentence.w || '';
-    phoneticElement.textContent = sentence.po || sentence.p || '';
+            // Ẩn thông tin
+            meaningElement.classList.add('hidden');
+            fullSentenceElement.classList.add('hidden');
+            phoneticElement.classList.add('hidden');
+            isVnVisible = false;
+            isEnVisible = false;
+            vnBtn.classList.remove('active');
+            enBtn.classList.remove('active');
 
-    // Ẩn thông tin
-    meaningElement.classList.add('hidden');
-    fullSentenceElement.classList.add('hidden');
-    phoneticElement.classList.add('hidden');
-    isVnVisible = false;
-    isEnVisible = false;
-    vnBtn.classList.remove('active');
-    enBtn.classList.remove('active');
+            // Tách câu và chuẩn bị dữ liệu
+            currentWords = (currentSentence.en || currentSentence.w || '').split(' ');
+            currentFirstLetters = currentWords.map(word => word.charAt(0).toLowerCase());
 
-    // Tách câu và chuẩn bị dữ liệu
-    currentWords = (sentence.en || sentence.w || '').split(' ');
-    currentFirstLetters = currentWords.map(word => word.charAt(0).toLowerCase());
+            resultProgress = Array(currentWords.length).fill(0);
+            currentWordIndex = 0;
 
-    userProgress = Array(currentWords.length).fill('');
-    resultProgress = Array(currentWords.length).fill(-1);
-    currentWordIndex = 0;
+            updateInputDisplay();
 
-    setTimeout(() => hiddenInput.focus(), 100);
-    updateInputDisplay();
-
-    // 🔊 Tự động đọc câu tiếng Anh khi load
-    const utterance = new SpeechSynthesisUtterance(sentence.en || sentence.w);
-    utterance.lang = 'en-US';
-    utterance.rate = speechRate;
-    window.speechSynthesis.speak(utterance);
-}
-
-
-        // Cập nhật hiển thị input - ĐÃ SỬA
-        
-// =====================
-// HÀM CẬP NHẬT HIỂN THỊ
-// =====================
-
-function updateInputDisplay() {
-    inputDisplayElement.innerHTML = '';
-
-    currentWords.forEach((word, index) => {
-        const wordSpan = document.createElement('span');
-        wordSpan.className = 'word';
-        const isCurrent = index === currentWordIndex;
-
-        // Hiển thị theo trạng thái resultProgress
-        if (resultProgress[index] === 1) {
-            // ✅ Đúng: luôn hiện từ thật (kể cả vừa sửa sai)
-            wordSpan.textContent = word;
-            wordSpan.classList.add('correct');
-        } 
-        else if (resultProgress[index] === 0) {
-            // ❌ Sai: chỉ gạch đỏ, không lộ từ
-            wordSpan.textContent = '_'.repeat(word.length);
-            wordSpan.classList.add('incorrect');
-        } 
-        else {
-            // ⏳ Chưa gõ
-            wordSpan.textContent = '_'.repeat(word.length);
-        }
-
-        if (isCurrent) {
-            wordSpan.classList.add('current');
-        }
-
-        inputDisplayElement.appendChild(wordSpan);
-        if (index < currentWords.length - 1) {
-            inputDisplayElement.appendChild(document.createTextNode(' '));
-        }
-    });
-
-    // ✅ Kiểm tra hoàn thành câu
-    const allTyped = userProgress.every(p => p !== '');
-    if (allTyped) {
-        const hasError = resultProgress.includes(0);
-        phoneticElement.classList.remove('hidden');
-        updateVocabularyAfterCompletion(!hasError);
-
-        if (!hasError) {
-            setTimeout(() => nextSentence(), 1000);
-        }
-    }
-}
-
-// =====================
-// HÀM XỬ LÝ GÕ PHÍM
-// =====================
-
-function handleTyping(typedChar) {
-    if (currentWordIndex >= currentWords.length) return;
-
-    const correctChar = currentFirstLetters[currentWordIndex];
-    const isCorrect = typedChar === correctChar;
-
-    userProgress[currentWordIndex] = typedChar;
-
-    if (resultProgress[currentWordIndex] === -1) {
-        resultProgress[currentWordIndex] = isCorrect ? 1 : 0;
-    }
-    else if (resultProgress[currentWordIndex] === 0 && isCorrect) {
-        // Nếu gõ lại đúng sau khi sai → cập nhật thành đúng và sang từ kế
-        resultProgress[currentWordIndex] = 1;
-        currentWordIndex++;
-    }
-    else if (isCorrect) {
-        currentWordIndex++;
-    }
-
-    updateInputDisplay();
-    hiddenInput.focus();
-}
-
-
-
-        // CẬP NHẬT DỮ LIỆU SAU KHI HOÀN THÀNH CÂU
-        function updateVocabularyAfterCompletion(isCorrect) {
-            if (!currentVocabulary) return;
-            
-            const vocabularies = JSON.parse(localStorage.getItem('vocabularies') || '[]');
-            const now = Date.now();
-            let updated = false;
-            
-            // Tìm và cập nhật vocabulary trong localStorage
-            const updatedVocabularies = vocabularies.map(vocab => {
-                // SO SÁNH CHÍNH XÁC - hỗ trợ cả định dạng cũ và mới
-                const isMatch = 
-                    (vocab.en === currentVocabulary.en || vocab.w === currentVocabulary.en) &&
-                    (vocab.vn === currentVocabulary.vn || vocab.m === currentVocabulary.vn);
-                
-                if (isMatch) {
-                    updated = true;
-                    if (isCorrect) {
-                        // LÀM ĐÚNG: tăng level
-                        vocab.l = (vocab.l || 0) + 1;
-                        vocab.nt = calculateNextTime(vocab.l);
-                    } else {
-                        // LÀM SAI: về level 1 với nt = NOW
-                        vocab.l = 1;
-                        vocab.nt = now; // NGAY LẬP TỨC
-                    }
-                    // Luôn cập nhật thời gian học cuối
-                    vocab.lt = now;
+            // Tự động đọc câu tiếng Anh sau 0.4 giây - CHẮC CHẮN ĐỌC KHI LOAD
+            setTimeout(() => {
+                if (!hasSpoken) {
+                    speakSentence();
                 }
-                return vocab;
+            }, 400);
+        }
+
+        // Cập nhật hiển thị input
+        function updateInputDisplay() {
+            inputDisplayElement.innerHTML = '';
+
+            currentWords.forEach((word, index) => {
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'word';
+                const state = resultProgress[index];
+                const isCurrent = index === currentWordIndex && !isCompleted;
+
+                switch (state) {
+                    case 1: // đúng ngay
+                        wordSpan.textContent = word;
+                        wordSpan.style.color = '#4caf50';
+                        wordSpan.style.borderColor = '#2d5a2d';
+                        wordSpan.style.background = '#1a331a';
+                        break;
+                    case 2: // sai
+                        wordSpan.textContent = '_'.repeat(word.length);
+                        wordSpan.style.color = '#f44336';
+                        wordSpan.style.borderColor = '#5a2d2d';
+                        wordSpan.style.background = '#331a1a';
+                        break;
+                    case 3: // sửa sai
+                        wordSpan.textContent = word;
+                        wordSpan.style.color = '#f44336';
+                        wordSpan.style.borderColor = '#5a2d2d';
+                        wordSpan.style.background = '#1a1a1a';
+                        break;
+                    case 0: // chưa gõ
+                    default:
+                        wordSpan.textContent = '_'.repeat(word.length);
+                        wordSpan.style.color = '#666';
+                        wordSpan.style.borderColor = '#333';
+                        wordSpan.style.background = '#1a1a1a';
+                        break;
+                }
+
+                if (isCurrent) wordSpan.classList.add('current');
+                inputDisplayElement.appendChild(wordSpan);
+                if (index < currentWords.length - 1)
+                    inputDisplayElement.appendChild(document.createTextNode(' '));
             });
-            
-            if (updated) {
-                localStorage.setItem('vocabularies', JSON.stringify(updatedVocabularies));
+
+            // Kiểm tra hoàn thành câu
+            const allTyped = !resultProgress.includes(0);
+            if (allTyped && !isCompleted) {
+                isCompleted = true;
+                const allPerfect = resultProgress.every(v => v === 1);
+                phoneticElement.classList.remove('hidden');
+                
+                // Hiển thị nút Next thay vì tự động chuyển
+                nextBtn.classList.remove('hidden');
+                
+                // Lưu kết quả tạm thời để chuyển cho save.html
+                currentSentence.result = allPerfect ? 'perfect' : 'imperfect';
             }
         }
 
+        // Xử lý gõ phím
+        function handleTyping(typedChar) {
+            if (currentWordIndex >= currentWords.length || isCompleted) return;
+
+            const correctChar = currentFirstLetters[currentWordIndex];
+            const isCorrect = typedChar === correctChar;
+
+            const currentState = resultProgress[currentWordIndex];
+
+            if (currentState === 0) {
+                // Lần đầu gõ
+                resultProgress[currentWordIndex] = isCorrect ? 1 : 2;
+                if (isCorrect) currentWordIndex++;
+            } 
+            else if (currentState === 2 && isCorrect) {
+                // Đã sai rồi, giờ gõ đúng → trạng thái 3
+                resultProgress[currentWordIndex] = 3;
+                currentWordIndex++;
+            } 
+            else if ((currentState === 1 || currentState === 3) && isCorrect) {
+                // Nếu đã đúng hoặc sửa đúng → sang từ kế
+                currentWordIndex++;
+            }
+
+            updateInputDisplay();
+            focusHiddenInput();
+        }
+
         // Xử lý phím từ người dùng
-        
-function handleKeyPress(event) {
-    // Nếu focus đang ở hiddenInput thì bỏ qua xử lý ở sự kiện keydown
-    // để tránh xử lý 2 lần (keydown + input) gây mark sai cho từ tiếp theo.
-    if (document.activeElement === hiddenInput) return;
-
-    if (event.key.length === 1 && /[a-zA-Z]/.test(event.key)) {
-        handleTyping(event.key.toLowerCase());
-        event.preventDefault();
-    }
-}
-
+        function handleKeyPress(event) {
+            if (event.key.length === 1 && /[a-zA-Z]/.test(event.key)) {
+                handleTyping(event.key.toLowerCase());
+                event.preventDefault();
+            }
+        }
 
         // Xử lý input ẩn
         function handleHiddenInput(event) {
             const value = event.target.value.toLowerCase();
-            if (value.length > 0) {
+            if (value.length > 0 && !isCompleted) {
                 handleTyping(value.charAt(0));
                 event.target.value = '';
             }
         }
 
-        // Xử lý gõ ký tự - ĐÃ SỬA QUAN TRỌNG
-        function handleTyping(typedChar) {
-            if (currentWordIndex >= currentWords.length) return;
-            
-            const isCorrect = typedChar === currentFirstLetters[currentWordIndex];
-            userProgress[currentWordIndex] = typedChar;
-            
-            // QUAN TRỌNG: Chỉ cập nhật resultProgress nếu chưa được set (=-1)
-            // Một khi đã sai (0) thì KHÔNG BAO GIỜ thành đúng (1) được
-            if (resultProgress[currentWordIndex] === -1) {
-                resultProgress[currentWordIndex] = isCorrect ? 1 : 0;
-            }
-            
-            if (isCorrect) {
-                currentWordIndex++;
-            }
-            
-            updateInputDisplay();
-            hiddenInput.focus();
-        }
-
         // Focus input ẩn
         function focusHiddenInput() {
-            hiddenInput.focus();
+            // Chỉ focus khi chưa hoàn thành câu
+            if (!isCompleted) {
+                hiddenInput.focus();
+            }
         }
 
-        // Hiển thị thông báo không có dữ liệu
-        function showNoDataMessage() {
+        // Chuyển về trang chủ
+        function goToHome() {
+            window.location.href = 'index.html';
+        }
+
+        // Chuyển đến câu tiếp theo
+        function goToNextSentence() {
+            if (!currentSentence || !currentSentence.result) return;
+            
+            const encodedSentence = encodeURIComponent(JSON.stringify(currentSentence));
+            window.location.href = `save.html?sentence=${encodedSentence}&result=${currentSentence.result}&auto=true`;
+        }
+
+        // Hiển thị lỗi
+        function showError(message) {
             inputDisplayElement.innerHTML = `
-                <div class="no-data-message">
-                    <h3>Chưa có câu nào để luyện tập</h3>
-                    <p>Tổng số câu trong hệ thống: ${getTotalSentencesCount()}</p>
-                    <p>Số câu cần học: ${getSentencesToLearnCount()}</p>
-                    <button onclick="window.location.href='index.html'">
-                        Quay lại trang chủ
+                <div style="color: #f44336; text-align: center; padding: 40px;">
+                    <h3>❌ ${message}</h3>
+                    <button onclick="goToHome()" style="margin-top: 15px; padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Quay về trang chủ
                     </button>
                 </div>
             `;
-            nextSentenceBtn.disabled = true;
-            nextSentenceBtn.textContent = "Không có dữ liệu";
         }
 
-        // Hiển thị thông báo đã hoàn thành tất cả câu
-        function showAllCompletedMessage() {
-            inputDisplayElement.innerHTML = `
-                <div class="completion-message">
-                    <h3>🎉 Chúc mừng!</h3>
-                    <p>Bạn đã hoàn thành tất cả câu cần học trong lúc này.</p>
-                    <p>Hãy quay lại sau khi có thêm câu mới hoặc câu đã tới hạn.</p>
-                </div>
-            `;
-            nextSentenceBtn.disabled = true;
-            nextSentenceBtn.textContent = "Đã hoàn thành";
-        }
-
-        function getTotalSentencesCount() {
-            const savedVocabularies = localStorage.getItem('vocabularies');
-            return savedVocabularies ? JSON.parse(savedVocabularies).length : 0;
-        }
-
-        function getSentencesToLearnCount() {
-            const savedVocabularies = localStorage.getItem('vocabularies');
-            if (!savedVocabularies) return 0;
-            
-            const vocabularies = JSON.parse(savedVocabularies);
-            const now = Date.now();
-            return vocabularies.filter(v => !v.nt || v.nt <= now).length;
-        }
-
-        // Hiển thị/ẩn dropdown tốc độ
-        function toggleDropdown(e) {
-            e.stopPropagation();
-            dropdown.classList.toggle('active');
-        }
-
-        // Hiển thị/ẩn tiếng Việt
+        // Hiển thị/ẩn tiếng Việt - ĐÁNH DẤU SAI KHI ẤN NÚT
         function toggleVnDisplay() {
+            // Đánh dấu từ hiện tại là sai nếu chưa gõ
+            if (!isCompleted && currentWordIndex < resultProgress.length && resultProgress[currentWordIndex] === 0) {
+                resultProgress[currentWordIndex] = 2;
+                updateInputDisplay();
+            }
+
             isVnVisible = !isVnVisible;
             if (isVnVisible) {
                 meaningElement.classList.remove('hidden');
@@ -793,11 +634,16 @@ function handleKeyPress(event) {
                 meaningElement.classList.add('hidden');
                 vnBtn.classList.remove('active');
             }
-            hiddenInput.focus();
         }
 
-        // Hiển thị/ẩn câu tiếng Anh
+        // Hiển thị/ẩn câu tiếng Anh - ĐÁNH DẤU SAI KHI ẤN NÚT
         function toggleEnDisplay() {
+            // Đánh dấu từ hiện tại là sai nếu chưa gõ
+            if (!isCompleted && currentWordIndex < resultProgress.length && resultProgress[currentWordIndex] === 0) {
+                resultProgress[currentWordIndex] = 2;
+                updateInputDisplay();
+            }
+
             isEnVisible = !isEnVisible;
             if (isEnVisible) {
                 fullSentenceElement.classList.remove('hidden');
@@ -806,48 +652,53 @@ function handleKeyPress(event) {
                 fullSentenceElement.classList.add('hidden');
                 enBtn.classList.remove('active');
             }
-            hiddenInput.focus();
         }
 
-        // Chuyển đến câu tiếp theo
-        function nextSentence() {
-            // Load lại danh sách câu (vì có thể đã thay đổi sau khi học)
-            const savedVocabularies = localStorage.getItem('vocabularies');
-            if (savedVocabularies) {
-                const vocabularies = JSON.parse(savedVocabularies);
-                sentences = getPrioritySentences(vocabularies);
-            }
+        // Đọc câu tiếng Anh - SỬA LỖI SPEECH SYNTHESIS
+        function speakSentence() {
+            if (!currentSentence) return;
             
-            if (sentences.length === 0) {
-                showAllCompletedMessage();
+            const sentence = currentSentence.en || currentSentence.w;
+            if (!sentence) return;
+            
+            // Kiểm tra trình duyệt có hỗ trợ speech synthesis không
+            if (!('speechSynthesis' in window)) {
+                console.log('Trình duyệt không hỗ trợ Text-to-Speech');
                 return;
             }
-            
-            // Chuyển sang câu tiếp theo (hoặc về đầu nếu hết)
-            currentSentenceIndex = (currentSentenceIndex + 1) % sentences.length;
-            loadSentence(currentSentenceIndex);
-            hiddenInput.focus();
-        }
 
-        // Đọc câu tiếng Anh
-        function speakSentence() {
-            if (sentences.length === 0) return;
-            
-            const sentence = sentences[currentSentenceIndex].en || sentences[currentSentenceIndex].w;
             const utterance = new SpeechSynthesisUtterance(sentence);
             utterance.lang = 'en-US';
             utterance.rate = speechRate;
-            window.speechSynthesis.speak(utterance);
-            hiddenInput.focus();
+            
+            // Đánh dấu đã đọc
+            hasSpoken = true;
+            
+            // Dừng phát âm thanh trước đó nếu có
+            window.speechSynthesis.cancel();
+            
+            // Sửa lỗi: thử phát âm thanh
+            try {
+                window.speechSynthesis.speak(utterance);
+            } catch (error) {
+                console.log('Lỗi phát âm thanh:', error);
+                // Nếu lỗi, đánh dấu chưa đọc để thử lại
+                hasSpoken = false;
+            }
         }
 
-        // Hiển thị thống kê
-        function showStats() {
-            window.location.href = 'index.html';
-        }
+        // Đảm bảo đọc khi trang load - THÊM SỰ KIỆN LOAD
+        window.addEventListener('load', function() {
+            // Nếu chưa đọc sau 1 giây, thử đọc lại
+            setTimeout(() => {
+                if (!hasSpoken && currentSentence) {
+                    speakSentence();
+                }
+            }, 1000);
+        });
 
         // Khởi chạy ứng dụng
-        initApp();
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
