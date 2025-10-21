@@ -3,16 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lưu kết quả</title>
+    <title>Kết quả học tập</title>
     <style>
-        body {
-            background-color: #000000;
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .back-button {
+            background-color: #666;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .back-button:hover {
+            background-color: #555;
+        }
+
+        .results-summary {
+            background-color: #222;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+            text-align: center;
+        }
+
+        .summary-title {
+            color: #1a73e8;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4caf50;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .sentences-results {
+            margin-bottom: 30px;
+        }
+
+        .result-item {
+            background-color: #222;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .sentence-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .sentence-en {
+            font-size: 1.1rem;
+            color: #1a73e8;
+            flex: 1;
+        }
+
+        .level-change {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #888;
+        }
+
+        .level-old, .level-new {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .level-old {
+            background: #333;
+            color: #ccc;
+        }
+
+        .level-up .level-new {
+            background: #1a331a;
+            color: #4caf50;
+        }
+
+        .level-down .level-new {
+            background: #331a1a;
+            color: #f44336;
+        }
+
+        .level-same .level-new {
+            background: #1a1a33;
+            color: #2196f3;
+        }
+
+        .level-arrow {
+            font-size: 1.2rem;
+        }
+
+        .round-results {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .round-result {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .round-perfect {
+            background: #1a331a;
+            color: #4caf50;
+        }
+
+        .round-imperfect {
+            background: #331a1a;
+            color: #f44336;
+        }
+
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .continue-button {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .continue-button:hover {
+            background-color: #1976d2;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+            font-style: italic;
         }
     </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Kết quả học tập</h1>
+            <a href="index.html" class="back-button">← Về trang chủ</a>
+        </header>
+
+        <div class="results-summary" id="resultsSummary">
+            <!-- Tổng kết kết quả -->
+        </div>
+
+        <div class="sentences-results" id="sentencesResults">
+            <!-- Kết quả chi tiết từng câu -->
+        </div>
+
+        <div class="actions">
+            <button class="continue-button" id="continueButton">Tiếp tục học</button>
+        </div>
+    </div>
+
     <script>
+        let resultsData = null;
+        let updatedVocabularies = [];
+
         // Lấy tham số từ URL
         function getUrlParam(name) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -42,79 +253,171 @@
             return now + (level in intervals ? intervals[level] : intervals[10]);
         }
 
-        // Cập nhật dữ liệu vocabulary và thống kê
-        function updateVocabulary() {
-            const sentenceParam = getUrlParam('sentence');
-            const result = getUrlParam('result');
-            
-            if (!sentenceParam || !result) return null;
-            
+        // Xử lý kết quả và cập nhật level
+        function processResults() {
+            const resultsParam = getUrlParam('results');
+            if (!resultsParam) return;
+
             try {
-                const currentSentence = JSON.parse(decodeURIComponent(sentenceParam));
+                resultsData = JSON.parse(decodeURIComponent(resultsParam));
                 const vocabularies = JSON.parse(localStorage.getItem('vocabularies') || '[]');
                 const now = Date.now();
-                let updated = false;
-                let newLevel = null;
                 
-                const updatedVocabularies = vocabularies.map(vocab => {
-                    const isMatch = 
-                        (vocab.en === currentSentence.en || vocab.w === currentSentence.en) &&
-                        (vocab.vn === currentSentence.vn || vocab.m === currentSentence.vn);
+                let totalUp = 0;
+                let totalDown = 0;
+                let totalSame = 0;
+
+                // Xử lý từng câu
+                resultsData.processedResults = resultsData.sentences.map((sentence, index) => {
+                    const round1Result = resultsData.roundResults[1][index];
+                    const round2Result = resultsData.roundResults[2][index];
                     
-                    if (isMatch) {
-                        updated = true;
-                        if (result === 'perfect') {
-                            newLevel = (vocab.l || 0) + 1;
-                            vocab.l = newLevel;
-                            vocab.nt = calculateNextTime(newLevel);
+                    // Tìm câu trong vocabularies
+                    const vocabIndex = vocabularies.findIndex(vocab => 
+                        (vocab.en === sentence.en || vocab.w === sentence.en) &&
+                        (vocab.vn === sentence.vn || vocab.m === sentence.vn)
+                    );
+
+                    let oldLevel = 0;
+                    let newLevel = 0;
+                    let levelChange = 'same';
+
+                    if (vocabIndex !== -1) {
+                        oldLevel = vocabularies[vocabIndex].l || 0;
+                        
+                        // Quy tắc: cả 2 vòng đều perfect mới lên level, không thì về level 1
+                        if (round1Result === 'perfect' && round2Result === 'perfect') {
+                            newLevel = oldLevel + 1;
+                            levelChange = 'up';
+                            totalUp++;
                         } else {
                             newLevel = 1;
-                            vocab.l = newLevel;
-                            vocab.nt = now;
+                            if (oldLevel > 1) {
+                                levelChange = 'down';
+                                totalDown++;
+                            } else {
+                                levelChange = 'same';
+                                totalSame++;
+                            }
                         }
-                        vocab.lt = now;
+
+                        // Cập nhật vocabulary
+                        vocabularies[vocabIndex].l = newLevel;
+                        vocabularies[vocabIndex].lt = now;
+                        vocabularies[vocabIndex].nt = calculateNextTime(newLevel);
                     }
-                    return vocab;
+
+                    return {
+                        sentence: sentence,
+                        round1Result: round1Result,
+                        round2Result: round2Result,
+                        oldLevel: oldLevel,
+                        newLevel: newLevel,
+                        levelChange: levelChange
+                    };
                 });
-                
-                if (updated) {
-                    localStorage.setItem('vocabularies', JSON.stringify(updatedVocabularies));
-                    
-                    // Cập nhật thống kê phiên học
-                    updateSessionStats(newLevel);
-                    
-                    return newLevel;
-                }
+
+                // Lưu lại vocabularies đã cập nhật
+                updatedVocabularies = vocabularies;
+                localStorage.setItem('vocabularies', JSON.stringify(vocabularies));
+
+                // Thống kê tổng quan
+                resultsData.summary = {
+                    total: resultsData.sentences.length,
+                    up: totalUp,
+                    down: totalDown,
+                    same: totalSame
+                };
+
             } catch (error) {
-                console.error('Lỗi khi lưu kết quả:', error);
+                console.error('Lỗi xử lý kết quả:', error);
             }
-            
-            return null;
         }
 
-        // Cập nhật thống kê phiên học
-        function updateSessionStats(newLevel) {
-            let sessionStats = JSON.parse(sessionStorage.getItem('sessionStats') || '{}');
+        // Hiển thị tổng kết
+        function displaySummary() {
+            const summaryElement = document.getElementById('resultsSummary');
             
-            // Tăng số câu cho level tương ứng
-            sessionStats[newLevel] = (sessionStats[newLevel] || 0) + 1;
+            if (!resultsData || !resultsData.summary) {
+                summaryElement.innerHTML = '<div class="no-results">Không có kết quả để hiển thị</div>';
+                return;
+            }
+
+            const { total, up, down, same } = resultsData.summary;
+
+            summaryElement.innerHTML = `
+                <div class="summary-title">Tổng kết phiên học</div>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">${total}</div>
+                        <div class="stat-label">Tổng câu</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #4caf50">${up}</div>
+                        <div class="stat-label">Lên level</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #f44336">${down}</div>
+                        <div class="stat-label">Xuống level</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #2196f3">${same}</div>
+                        <div class="stat-label">Giữ nguyên</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Hiển thị kết quả chi tiết
+        function displayDetailedResults() {
+            const resultsElement = document.getElementById('sentencesResults');
             
-            sessionStorage.setItem('sessionStats', JSON.stringify(sessionStats));
+            if (!resultsData || !resultsData.processedResults) {
+                resultsElement.innerHTML = '<div class="no-results">Không có kết quả chi tiết</div>';
+                return;
+            }
+
+            resultsElement.innerHTML = resultsData.processedResults.map(result => {
+                const levelClass = `level-${result.levelChange}`;
+                
+                return `
+                    <div class="result-item">
+                        <div class="sentence-header">
+                            <div class="sentence-en">${result.sentence.en || result.sentence.w}</div>
+                            <div class="level-change ${levelClass}">
+                                <span class="level-old">Lv${result.oldLevel}</span>
+                                <span class="level-arrow">→</span>
+                                <span class="level-new">Lv${result.newLevel}</span>
+                            </div>
+                        </div>
+                        <div class="round-results">
+                            <div class="round-result ${result.round1Result === 'perfect' ? 'round-perfect' : 'round-imperfect'}">
+                                Vòng 1: ${result.round1Result === 'perfect' ? '✅ Hoàn hảo' : '❌ Cần cải thiện'}
+                            </div>
+                            <div class="round-result ${result.round2Result === 'perfect' ? 'round-perfect' : 'round-imperfect'}">
+                                Vòng 2: ${result.round2Result === 'perfect' ? '✅ Hoàn hảo' : '❌ Cần cải thiện'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Tiếp tục học
+        function continueLearning() {
+            window.location.href = 'choose.html';
         }
 
         // Khởi tạo
         function init() {
-            // Cập nhật dữ liệu ngay lập tức
-            updateVocabulary();
-            
-            // Chuyển hướng ngay đến choose.html
-            window.location.href = 'choose.html?auto=true';
+            processResults();
+            displaySummary();
+            displayDetailedResults();
+
+            document.getElementById('continueButton').addEventListener('click', continueLearning);
         }
 
-        // Chạy khi trang load
         document.addEventListener('DOMContentLoaded', init);
     </script>
-</head>
-<body>
 </body>
 </html>

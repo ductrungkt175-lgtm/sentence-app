@@ -1,18 +1,170 @@
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chọn câu học</title>
     <style>
-        body {
-            background-color: #000000;
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .back-button {
+            background-color: #666;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .back-button:hover {
+            background-color: #555;
+        }
+
+        .selected-count {
+            text-align: center;
+            color: #ccc;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .sentences-list {
+            margin-bottom: 30px;
+        }
+
+        .sentence-item {
+            background-color: #222;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sentence-item:hover {
+            background-color: #2a2a2a;
+            border-color: #444;
+        }
+
+        .sentence-content {
+            flex: 1;
+        }
+
+        .sentence-en {
+            font-size: 1.2rem;
+            color: #1a73e8;
+            margin-bottom: 5px;
+        }
+
+        .sentence-info {
+            display: flex;
+            gap: 15px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .sentence-level {
+            color: #4caf50;
+        }
+
+        .sentence-audio-indicator {
+            color: #fff;
+            font-size: 1.5rem;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .typing-button {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .typing-button:hover {
+            background-color: #1976d2;
+        }
+
+        .typing-button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+
+        .no-sentences {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+            font-style: italic;
         }
     </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Danh sách câu học</h1>
+            <a href="index.html" class="back-button">← Quay lại</a>
+        </header>
+
+        <div class="selected-count">
+            Đã tự động chọn <span id="count">5</span> câu ưu tiên nhất
+        </div>
+
+        <div class="sentences-list" id="sentencesList">
+            <!-- Danh sách câu sẽ hiển thị ở đây -->
+        </div>
+
+        <div class="actions">
+            <button class="typing-button" id="typingButton">Bắt đầu Typing</button>
+        </div>
+    </div>
+
     <script>
-        // Lấy danh sách câu ưu tiên - TỐI ƯU TỐC ĐỘ
+        let selectedSentences = [];
+
+        // Lấy danh sách câu ưu tiên
         function getPrioritySentences(vocabularies) {
             const now = Date.now();
             const sentencesByLevel = {};
@@ -37,7 +189,6 @@
             
             for (const level of levelOrder) {
                 if (sentencesByLevel[level]) {
-                    // Sắp xếp theo thời gian quá hạn (nhiều nhất trước)
                     sentencesByLevel[level].sort((a, b) => b.hoursOverdue - a.hoursOverdue);
                     priorityOrder.push(...sentencesByLevel[level]);
                 }
@@ -46,27 +197,70 @@
             return priorityOrder;
         }
 
-        // Khởi tạo và chọn câu ngay lập tức
+        // Phát âm thanh câu
+        function speakSentence(sentence) {
+            if (!('speechSynthesis' in window)) return;
+            
+            const utterance = new SpeechSynthesisUtterance(sentence);
+            utterance.lang = 'en-US';
+            utterance.rate = parseFloat(localStorage.getItem('speechRate') || '1.0');
+            
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Hiển thị danh sách câu
+        function displaySentences() {
+            const sentencesList = document.getElementById('sentencesList');
+
+            if (selectedSentences.length === 0) {
+                sentencesList.innerHTML = '<div class="no-sentences">Không có câu nào để học</div>';
+                document.getElementById('typingButton').disabled = true;
+                return;
+            }
+
+            sentencesList.innerHTML = selectedSentences.map((sentence, index) => {
+                return `
+                    <div class="sentence-item" 
+                         onclick="speakSentence('${(sentence.en || sentence.w).replace(/'/g, "\\'")}')">
+                        <div class="sentence-content">
+                            <div class="sentence-en">${sentence.en || sentence.w}</div>
+                            <div class="sentence-info">
+                                <span class="sentence-level">Lv${sentence.l || 0}</span>
+                                <span>${sentence.vn || sentence.m}</span>
+                            </div>
+                        </div>
+                        <div class="sentence-audio-indicator">
+                            🔊
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Chuyển đến trang typing
+        function goToTyping() {
+            if (selectedSentences.length === 0) return;
+            
+            const encodedSentences = encodeURIComponent(JSON.stringify(selectedSentences));
+            window.location.href = `type.html?sentences=${encodedSentences}`;
+        }
+
+        // Khởi tạo
         function init() {
             const vocabularies = JSON.parse(localStorage.getItem('vocabularies') || '[]');
             const prioritySentences = getPrioritySentences(vocabularies);
             
-            if (prioritySentences.length === 0) {
-                // Không có câu nào - chuyển về trang chủ
-                window.location.href = 'index.html';
-                return;
-            }
+            // Tự động chọn 5 câu đầu tiên
+            selectedSentences = prioritySentences.slice(0, 5);
             
-            // Lấy câu ưu tiên nhất và chuyển ngay đến type.html
-            const nextSentence = prioritySentences[0];
-            const encodedSentence = encodeURIComponent(JSON.stringify(nextSentence));
-            window.location.href = `type.html?sentence=${encodedSentence}&auto=true`;
+            displaySentences();
+
+            // Gắn sự kiện
+            document.getElementById('typingButton').addEventListener('click', goToTyping);
         }
 
-        // Chạy ngay khi trang load
         document.addEventListener('DOMContentLoaded', init);
     </script>
-</head>
-<body>
 </body>
 </html>
