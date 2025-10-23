@@ -26,6 +26,7 @@
             display: flex;
             flex-direction: column;
             padding: 10px;
+            position: relative;
         }
         
         header {
@@ -43,10 +44,11 @@
         }
 
         .session-stats {
-            text-align: center;
+            position: absolute;
+            top: 15px;
+            right: 15px;
             color: #888;
-            margin-bottom: 10px;
-            font-size: 1rem;
+            font-size: 0.9rem;
             min-height: 20px;
         }
         
@@ -120,6 +122,8 @@
         }
         
         .display-area {
+            margin-top: 5px;
+            margin-bottom: 0;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -130,6 +134,7 @@
         }
         
         .meaning {
+            margin-bottom: 5px;
             font-size: 1.2rem;
             margin-bottom: 10px;
             display: flex;
@@ -140,6 +145,7 @@
         }
         
         .full-sentence {
+            margin-bottom: 5px;
             font-size: 1.2rem;
             margin-bottom: 10px;
             display: flex;
@@ -150,13 +156,13 @@
         }
         
         .phonetic {
+            margin-bottom: 5px;
             font-size: 1rem;
             color: #666;
             margin-bottom: 15px;
         }
         
         .typing-area {
-            height: 50vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -207,14 +213,16 @@
         
         .hidden-input {
             position: absolute;
-            left: -1000px;
-            width: 1px;
-            height: 1px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
             opacity: 0;
-            pointer-events: none;
+            cursor: pointer;
         }
 
         .next-btn {
+            z-index: 10; /* đảm bảo nút nằm trên input ẩn */
             width: 100%;
             padding: 15px;
             background: #2196f3;
@@ -268,7 +276,14 @@
             }
             
             .meaning, .full-sentence {
+            margin-bottom: 5px;
                 font-size: 1.1rem;
+            }
+            
+            .session-stats {
+                top: 10px;
+                right: 10px;
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -298,18 +313,18 @@
             <button class="control-btn" id="speakBtn">🔊</button>
         </div>
         
+        <div class="typing-area">
+            <div class="input-display" id="inputDisplay"></div>
+            <input type="text" id="hiddenInput" class="hidden-input" autocomplete="off" spellcheck="false" autofocus>
+            
+            <button class="next-btn hidden" id="nextBtn">Next</button>
+            <button class="next-btn hidden" id="finishBtn">Kết thúc</button>
+        </div>
+        
         <div class="display-area">
             <div class="meaning hidden" id="meaning"></div>
             <div class="full-sentence hidden" id="fullSentence"></div>
             <div class="phonetic hidden" id="phonetic"></div>
-        </div>
-        
-        <div class="typing-area">
-            <div class="input-display" id="inputDisplay"></div>
-            <input type="text" id="hiddenInput" class="hidden-input" autocomplete="off" spellcheck="false">
-            
-            <button class="next-btn hidden" id="nextBtn">Tiếp theo</button>
-            <button class="next-btn hidden" id="finishBtn">Kết thúc</button>
         </div>
     </div>
 
@@ -357,10 +372,19 @@
         function updateSessionStats() {
             const totalSentences = sentences.length;
             const currentSentenceNum = currentSentenceIndex + 1;
-            const correctCount = Object.values(roundResults[currentRound]).filter(r => r === 'perfect').length;
-            const wrongCount = Object.values(roundResults[currentRound]).filter(r => r === 'imperfect').length;
             
-            sessionStatsElement.textContent = `${totalSentences}/${currentSentenceNum}/${correctCount}/${wrongCount}`;
+            // Tính toán kết quả cho cả hai vòng
+            let correctCount = 0;
+            let wrongCount = 0;
+            
+            for (let round = 1; round <= 2; round++) {
+                Object.values(roundResults[round]).forEach(result => {
+                    if (result === 'perfect') correctCount++;
+                    else if (result === 'imperfect') wrongCount++;
+                });
+            }
+            
+            sessionStatsElement.textContent = `${totalSentences}/${currentSentenceNum}/${correctCount}r/${wrongCount}w`;
         }
 
         // Khởi tạo ứng dụng
@@ -423,7 +447,7 @@
             });
 
             // Focus input ẩn ngay lập tức để bàn phím hiện lên
-            setTimeout(focusHiddenInput, 500);
+            setTimeout(focusHiddenInput, 100);
         }
 
         // Tải câu hiện tại
@@ -447,12 +471,12 @@
                 vnBtn.classList.remove('active');
                 enBtn.classList.remove('active');
                 
-                // Tự động đọc câu
+                // Tự động đọc câu ở lượt đầu
                 setTimeout(() => {
                     if (!hasSpoken) {
                         speakSentence();
                     }
-                }, 300);
+                }, 500);
             } else {
                 meaningElement.classList.remove('hidden');
                 fullSentenceElement.classList.add('hidden');
@@ -528,13 +552,16 @@
                 // Lưu kết quả vòng hiện tại
                 roundResults[currentRound][currentSentenceIndex] = allPerfect ? 'perfect' : 'imperfect';
                 
+                // Tự động phát lại câu khi hoàn thành ở cả 2 vòng
+                setTimeout(speakSentence, 500);
+                
                 // Hiển thị nút tiếp theo
                 if (currentSentenceIndex < sentences.length - 1) {
                     nextBtn.classList.remove('hidden');
                 } else {
                     if (currentRound === 1) {
                         nextBtn.classList.remove('hidden');
-                        nextBtn.textContent = 'Chuyển sang vòng 2';
+                        nextBtn.textContent = 'Next';
                     } else {
                         finishBtn.classList.remove('hidden');
                     }
@@ -598,6 +625,7 @@
 
         // Chuyển đến câu tiếp theo
         function goToNextSentence() {
+            window.speechSynthesis.cancel(); // Dừng phát âm trước khi chuyển câu
             if (currentSentenceIndex < sentences.length - 1) {
                 currentSentenceIndex++;
                 loadCurrentSentence();
@@ -607,6 +635,7 @@
                 currentSentenceIndex = 0;
                 loadCurrentSentence();
             }
+            focusHiddenInput();
         }
 
         // Kết thúc phiên học
