@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học theo thư mục</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .back-button {
+            background-color: #666;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .back-button:hover {
+            background-color: #555;
+        }
+
+        .folders-list {
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .folder-item {
+            background-color: #222;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .folder-item:hover {
+            background-color: #2a2a2a;
+            border-color: #444;
+        }
+
+        .folder-item.selected {
+            background-color: #1a3d5c;
+            border-color: #1a73e8;
+        }
+
+        .folder-name {
+            font-size: 1.2rem;
+            color: #1a73e8;
+            margin-bottom: 5px;
+        }
+
+        .folder-stats {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .folder-details {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .sentence-item {
+            background-color: #222;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s;
+        }
+
+        .sentence-item.selected {
+            background-color: #2d5016;
+            border-color: #4caf50;
+        }
+
+        .sentence-order {
+            color: #888;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .sentence-content {
+            flex: 1;
+        }
+
+        .sentence-en {
+            font-size: 1.1rem;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .sentence-vn {
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .sentence-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .move-controls, .fl-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .control-button {
+            background-color: #444;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-button:hover {
+            background-color: #555;
+        }
+
+        .fl-value {
+            color: #ffa500;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .actions {
+            margin-top: 20px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .reset-button {
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .reset-button:hover {
+            background-color: #e64a19;
+        }
+
+        .start-button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .start-button:hover {
+            background-color: #45a049;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+            font-style: italic;
+        }
+
+        .selection-info {
+            text-align: center;
+            margin: 20px 0;
+            color: #ccc;
+            font-size: 1.1rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Học theo thư mục</h1>
+            <a href="index.html" class="back-button">← Quay lại trang chủ</a>
+        </header>
+
+        <div class="section-title">Chọn thư mục</div>
+        <div class="folders-list" id="foldersList">
+            <!-- Danh sách thư mục -->
+        </div>
+
+        <div class="folder-details" id="folderDetails">
+            <div class="section-title" id="selectedFolderName"></div>
+            <div class="selection-info">
+                Đã chọn <span id="selectedCount">0</span>/5 câu (ưu tiên FL thấp nhất)
+            </div>
+            <div class="sentences-list" id="sentencesList">
+                <!-- Danh sách câu trong thư mục -->
+            </div>
+            <div class="actions">
+                <button class="reset-button" id="resetFlButton">Reset FL toàn bộ</button>
+                <button class="start-button" id="startButton">Bắt đầu học</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFolderCode = null;
+        let currentFolderSentences = [];
+        let selectedSentences = [];
+
+        function getFolders() {
+            return JSON.parse(localStorage.getItem('folders')) || [];
+        }
+
+        function getVocabularies() {
+            return JSON.parse(localStorage.getItem('vocabularies')) || [];
+        }
+
+        function saveVocabularies(vocabularies) {
+            localStorage.setItem('vocabularies', JSON.stringify(vocabularies));
+        }
+
+        function displayFolders() {
+            const foldersList = document.getElementById('foldersList');
+            const folders = getFolders();
+
+            if (folders.length === 0) {
+                foldersList.innerHTML = '<div class="no-data">Chưa có thư mục nào.</div>';
+                return;
+            }
+
+            foldersList.innerHTML = folders.map(folder => {
+                const vocabularies = getVocabularies();
+                const folderVocabs = vocabularies.filter(v => v.s === folder.code);
+                const selectedClass = currentFolderCode === folder.code ? 'selected' : '';
+                
+                return `
+                    <div class="folder-item ${selectedClass}" onclick="selectFolder('${folder.code}', '${folder.name}')">
+                        <div class="folder-name">${folder.name}</div>
+                        <div class="folder-stats">${folderVocabs.length} câu</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectFolder(folderCode, folderName) {
+            currentFolderCode = folderCode;
+            document.getElementById('selectedFolderName').textContent = folderName;
+            document.getElementById('folderDetails').style.display = 'block';
+            
+            // Cập nhật UI
+            displayFolders();
+            loadFolderSentences();
+        }
+
+        function loadFolderSentences() {
+            const vocabularies = getVocabularies();
+            currentFolderSentences = vocabularies.filter(v => v.s === currentFolderCode);
+            updateSentenceSelection();
+        }
+
+        // Chọn 5 câu có FL thấp nhất
+        function getPrioritySentences(sentences) {
+            // Tạo bản sao để không ảnh hưởng đến dữ liệu gốc
+            const sortedSentences = [...sentences];
+            
+            // Sắp xếp: ưu tiên FL thấp nhất, nếu bằng nhau thì giữ thứ tự ban đầu
+            sortedSentences.sort((a, b) => {
+                const flA = a.fl || 0;
+                const flB = b.fl || 0;
+                return flA - flB;
+            });
+            
+            // Lấy 5 câu đầu tiên
+            return sortedSentences.slice(0, 5);
+        }
+
+        function updateSentenceSelection() {
+            const sentencesList = document.getElementById('sentencesList');
+            
+            if (currentFolderSentences.length === 0) {
+                sentencesList.innerHTML = '<div class="no-data">Thư mục này chưa có câu nào.</div>';
+                document.getElementById('selectedCount').textContent = '0';
+                return;
+            }
+
+            // Chọn 5 câu ưu tiên
+            selectedSentences = getPrioritySentences(currentFolderSentences);
+            document.getElementById('selectedCount').textContent = selectedSentences.length;
+
+            // Hiển thị tất cả câu, đánh dấu những câu được chọn
+            sentencesList.innerHTML = currentFolderSentences.map((sentence, index) => {
+                const fl = sentence.fl || 0;
+                const isSelected = selectedSentences.some(s => 
+                    (s.en === sentence.en || s.w === sentence.w) && s.s === sentence.s
+                );
+                
+                const itemClass = isSelected ? 'sentence-item selected' : 'sentence-item';
+                
+                return `
+                    <div class="${itemClass}" data-index="${index}">
+                        <div class="sentence-order">${index + 1}</div>
+                        <div class="sentence-content">
+                            <div class="sentence-en">${sentence.en || sentence.w}</div>
+                            <div class="sentence-vn">${sentence.vn || sentence.m}</div>
+                        </div>
+                        <div class="sentence-controls">
+                            <div class="move-controls">
+                                <button class="control-button" onclick="moveSentenceUp(${index})" ${index === 0 ? 'disabled' : ''}>↑</button>
+                                <button class="control-button" onclick="moveSentenceDown(${index})" ${index === currentFolderSentences.length - 1 ? 'disabled' : ''}>↓</button>
+                            </div>
+                            <div class="fl-controls">
+                                <button class="control-button" onclick="decreaseFL(${index})">-</button>
+                                <div class="fl-value">${fl}</div>
+                                <button class="control-button" onclick="increaseFL(${index})">+</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function moveSentenceUp(index) {
+            if (index <= 0) return;
+            
+            // Hoán đổi vị trí
+            const temp = currentFolderSentences[index];
+            currentFolderSentences[index] = currentFolderSentences[index - 1];
+            currentFolderSentences[index - 1] = temp;
+            
+            // Cập nhật localStorage
+            updateVocabulariesOrder();
+            updateSentenceSelection();
+        }
+
+        function moveSentenceDown(index) {
+            if (index >= currentFolderSentences.length - 1) return;
+            
+            // Hoán đổi vị trí
+            const temp = currentFolderSentences[index];
+            currentFolderSentences[index] = currentFolderSentences[index + 1];
+            currentFolderSentences[index + 1] = temp;
+            
+            // Cập nhật localStorage
+            updateVocabulariesOrder();
+            updateSentenceSelection();
+        }
+
+        function updateVocabulariesOrder() {
+            const allVocabularies = getVocabularies();
+            
+            // Xóa tất cả câu của thư mục hiện tại
+            const otherVocabularies = allVocabularies.filter(v => v.s !== currentFolderCode);
+            
+            // Thêm lại theo thứ tự mới
+            const updatedVocabularies = [...otherVocabularies, ...currentFolderSentences];
+            saveVocabularies(updatedVocabularies);
+        }
+
+        function increaseFL(index) {
+            const sentence = currentFolderSentences[index];
+            if (!sentence.fl) sentence.fl = 0;
+            sentence.fl += 1;
+            
+            // Cập nhật localStorage
+            updateVocabulariesOrder();
+            updateSentenceSelection();
+        }
+
+        function decreaseFL(index) {
+            const sentence = currentFolderSentences[index];
+            if (!sentence.fl) sentence.fl = 0;
+            if (sentence.fl > 0) {
+                sentence.fl -= 1;
+                
+                // Cập nhật localStorage
+                updateVocabulariesOrder();
+                updateSentenceSelection();
+            }
+        }
+
+        function resetFl() {
+            if (!currentFolderCode) return;
+
+            if (!confirm('Bạn có chắc muốn reset FL cho tất cả câu trong thư mục này?')) {
+                return;
+            }
+
+            currentFolderSentences.forEach(sentence => {
+                sentence.fl = 0;
+            });
+            
+            updateVocabulariesOrder();
+            updateSentenceSelection();
+            alert('Đã reset FL cho tất cả câu trong thư mục.');
+        }
+
+        function startPractice() {
+            if (!currentFolderCode || selectedSentences.length === 0) {
+                alert('Không có câu nào để học.');
+                return;
+            }
+
+            // Tăng FL cho các câu được chọn (chỉ cần chọn là tăng FL)
+            selectedSentences.forEach(sentence => {
+                if (!sentence.fl) sentence.fl = 0;
+                sentence.fl += 1;
+            });
+            
+            // Cập nhật localStorage
+            updateVocabulariesOrder();
+            
+            const encodedSentences = encodeURIComponent(JSON.stringify(selectedSentences));
+            window.location.href = `type.html?sentences=${encodedSentences}`;
+        }
+
+        function init() {
+            displayFolders();
+            document.getElementById('resetFlButton').addEventListener('click', resetFl);
+            document.getElementById('startButton').addEventListener('click', startPractice);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
