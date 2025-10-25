@@ -175,6 +175,10 @@
         .actions {
             text-align: center;
             margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
         }
 
         .continue-button {
@@ -190,6 +194,21 @@
 
         .continue-button:hover {
             background-color: #1976d2;
+        }
+
+        .retry-button {
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .retry-button:hover {
+            background-color: #f57c00;
         }
 
         .no-results {
@@ -217,12 +236,14 @@
 
         <div class="actions">
             <button class="continue-button" id="continueButton">Tiếp tục học</button>
+            <button class="retry-button" id="retryButton" style="display: none;">Luyện tập lại câu sai</button>
         </div>
     </div>
 
     <script>
         let resultsData = null;
         let updatedVocabularies = [];
+        let imperfectSentences = []; // Lưu các câu có kết quả không hoàn hảo
 
         // Lấy tham số từ URL
         function getUrlParam(name) {
@@ -266,6 +287,7 @@
                 let totalUp = 0;
                 let totalDown = 0;
                 let totalSame = 0;
+                imperfectSentences = []; // Reset mảng câu sai
 
                 // Xử lý từng câu
                 resultsData.processedResults = resultsData.sentences.map((sentence, index) => {
@@ -299,6 +321,9 @@
                                 levelChange = 'same';
                                 totalSame++;
                             }
+                            
+                            // Thêm câu này vào danh sách câu sai để luyện tập lại
+                            imperfectSentences.push(sentence);
                         }
 
                         // Cập nhật vocabulary
@@ -326,7 +351,8 @@
                     total: resultsData.sentences.length,
                     up: totalUp,
                     down: totalDown,
-                    same: totalSame
+                    same: totalSame,
+                    imperfect: imperfectSentences.length
                 };
 
             } catch (error) {
@@ -343,7 +369,7 @@
                 return;
             }
 
-            const { total, up, down, same } = resultsData.summary;
+            const { total, up, down, same, imperfect } = resultsData.summary;
 
             summaryElement.innerHTML = `
                 <div class="summary-title">Tổng kết phiên học</div>
@@ -363,6 +389,10 @@
                     <div class="stat-item">
                         <div class="stat-value" style="color: #2196f3">${same}</div>
                         <div class="stat-label">Giữ nguyên</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #ff9800">${imperfect}</div>
+                        <div class="stat-label">Cần luyện lại</div>
                     </div>
                 </div>
             `;
@@ -408,13 +438,30 @@
             window.location.href = 'choose.html';
         }
 
+        // Luyện tập lại các câu sai
+        function retryImperfectSentences() {
+            if (imperfectSentences.length > 0) {
+                const encodedSentences = encodeURIComponent(JSON.stringify(imperfectSentences));
+                window.location.href = `type.html?sentences=${encodedSentences}`;
+            } else {
+                // Nếu không có câu sai, chuyển đến trang chọn câu
+                continueLearning();
+            }
+        }
+
         // Khởi tạo
         function init() {
             processResults();
             displaySummary();
             displayDetailedResults();
 
+            // Hiển thị nút luyện tập lại nếu có câu sai
+            if (imperfectSentences.length > 0) {
+                document.getElementById('retryButton').style.display = 'block';
+            }
+
             document.getElementById('continueButton').addEventListener('click', continueLearning);
+            document.getElementById('retryButton').addEventListener('click', retryImperfectSentences);
         }
 
         document.addEventListener('DOMContentLoaded', init);
