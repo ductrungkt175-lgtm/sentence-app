@@ -186,15 +186,16 @@
             margin-top: 20px;
         }
 
+        /* Mobile-first approach - CẬP NHẬT */
         .vocabulary-item {
             background-color: #222;
             border: 1px solid #333;
             border-radius: 8px;
-            padding: 15px;
+            padding: 12px;
             margin-bottom: 10px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-start;
             transition: background-color 0.3s;
         }
 
@@ -203,35 +204,42 @@
         }
 
         .vocab-main {
-            flex: 1;
-            display: flex;
-            gap: 15px;
-            align-items: center;
+            width: 100%;
+            margin-bottom: 12px;
         }
 
         .sentence-en {
             font-weight: bold;
             color: #1a73e8;
             font-size: 1.1em;
-            min-width: 200px;
-        }
-
-        .sentence-po {
-            color: #ccc;
-            font-size: 0.9em;
-            min-width: 150px;
+            margin-bottom: 6px;
+            line-height: 1.4;
         }
 
         .sentence-vn {
             color: #fff;
-            flex: 1;
+            font-size: 1em;
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+
+        .sentence-po {
+            color: #ccc;
+            font-size: 0.85em;
+            font-style: italic;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-top: 8px;
         }
 
         .word-details {
-            text-align: right;
-            color: #888;
             font-size: 0.8em;
-            min-width: 150px;
+            text-align: left;
         }
 
         .word-level {
@@ -255,7 +263,6 @@
         .word-actions {
             display: flex;
             gap: 8px;
-            margin-left: 15px;
         }
 
         .delete-word-btn, .edit-word-btn {
@@ -314,31 +321,48 @@
             border-left: 4px solid #f39c12;
         }
 
-        /* CSS cho chế độ chỉnh sửa */
-        .edit-mode .sentence-en,
-        .edit-mode .sentence-vn {
+        /* CSS cho chế độ chỉnh sửa - CẬP NHẬT */
+        .edit-mode .text-display {
             display: none;
+        }
+
+        .edit-inputs {
+            display: none;
+            width: 100%;
+        }
+
+        .edit-mode .edit-inputs {
+            display: block;
         }
 
         .edit-input {
-            display: none;
             width: 100%;
-            padding: 8px;
-            background-color: #333;
-            color: white;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #333;
             border: 1px solid #555;
             border-radius: 4px;
+            color: white;
             font-size: 1em;
         }
 
-        .edit-mode .edit-input {
-            display: block;
+        .edit-en {
+            font-weight: bold;
+            border-left: 3px solid #1a73e8;
+        }
+
+        .edit-vn {
+            border-left: 3px solid #4caf50;
+        }
+
+        .edit-po {
+            border-left: 3px solid #ff9800;
+            font-size: 0.9em;
         }
 
         .edit-actions {
             display: none;
             gap: 5px;
-            margin-left: 10px;
         }
 
         .edit-mode .edit-actions {
@@ -373,6 +397,80 @@
 
         .cancel-edit-btn:hover {
             background-color: #7f8c8d;
+        }
+
+        /* Responsive cho desktop */
+        @media (min-width: 768px) {
+            .vocabulary-item {
+                flex-direction: row;
+                align-items: center;
+                padding: 15px;
+            }
+            
+            .vocab-main {
+                flex: 1;
+                margin-bottom: 0;
+                display: flex;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .text-display {
+                flex: 1;
+                display: flex;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .sentence-en {
+                min-width: 200px;
+                margin-bottom: 0;
+            }
+            
+            .sentence-vn {
+                flex: 1;
+                margin-bottom: 0;
+            }
+            
+            .sentence-po {
+                min-width: 150px;
+            }
+            
+            .word-details {
+                text-align: right;
+                min-width: 150px;
+                margin-top: 0;
+            }
+            
+            .action-bar {
+                margin-top: 0;
+                justify-content: flex-end;
+                gap: 15px;
+                width: auto;
+            }
+            
+            .edit-inputs {
+                flex: 1;
+                display: flex;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .edit-input {
+                margin-bottom: 0;
+            }
+            
+            .edit-en {
+                min-width: 200px;
+            }
+            
+            .edit-vn {
+                flex: 1;
+            }
+            
+            .edit-po {
+                min-width: 150px;
+            }
         }
     </style>
 </head>
@@ -511,26 +609,37 @@
                 const daysClass = days < 0 ? 'overdue-days' : 'word-days';
                 
                 return `
-                    <div class="vocabulary-item" data-en="${vocab.en}" data-vn="${vocab.vn}">
+                    <div class="vocabulary-item" data-en="${vocab.en}" data-vn="${vocab.vn}" data-po="${vocab.po || ''}">
                         <div class="vocab-main">
-                            <div class="sentence-en">${vocab.en}</div>
-                            <input type="text" class="edit-input edit-en" value="${vocab.en}" placeholder="Câu tiếng Anh">
-                            <div class="sentence-po">${vocab.po || ''}</div>
-                            <div class="sentence-vn">${vocab.vn}</div>
-                            <input type="text" class="edit-input edit-vn" value="${vocab.vn}" placeholder="Nghĩa tiếng Việt">
+                            <div class="text-display">
+                                <div class="sentence-en">${vocab.en}</div>
+                                <div class="sentence-vn">${vocab.vn}</div>
+                                ${vocab.po ? `<div class="sentence-po">${vocab.po}</div>` : ''}
+                            </div>
+                            
+                            <div class="edit-inputs">
+                                <input type="text" class="edit-input edit-en" value="${vocab.en}" placeholder="Câu tiếng Anh">
+                                <input type="text" class="edit-input edit-vn" value="${vocab.vn}" placeholder="Nghĩa tiếng Việt">
+                                <input type="text" class="edit-input edit-po" value="${vocab.po || ''}" placeholder="Phát âm (tùy chọn)">
+                            </div>
                         </div>
-                        <div class="word-details">
-                            <div class="word-level">Lv:${vocab.l || 0}</div>
-                            <div class="${daysClass}">${days}d</div>
-                            <div class="word-last-review">${lastReview}</div>
-                        </div>
-                        <div class="word-actions">
-                            <button class="edit-word-btn" onclick="enableEditMode(this)">Sửa</button>
-                            <button class="delete-word-btn" onclick="deleteWord('${vocab.en.replace(/'/g, "\\'")}', '${vocab.vn.replace(/'/g, "\\'")}')">Xóa</button>
-                        </div>
-                        <div class="edit-actions">
-                            <button class="save-edit-btn" onclick="saveEdit(this)">Lưu</button>
-                            <button class="cancel-edit-btn" onclick="cancelEdit(this)">Hủy</button>
+                        
+                        <div class="action-bar">
+                            <div class="word-details">
+                                <div class="word-level">Lv:${vocab.l || 0}</div>
+                                <div class="${daysClass}">${days}d</div>
+                                <div class="word-last-review">${lastReview}</div>
+                            </div>
+                            
+                            <div class="word-actions">
+                                <button class="edit-word-btn" onclick="enableEditMode(this)">Sửa</button>
+                                <button class="delete-word-btn" onclick="deleteWord('${vocab.en.replace(/'/g, "\\'")}', '${vocab.vn.replace(/'/g, "\\'")}')">Xóa</button>
+                            </div>
+                            
+                            <div class="edit-actions">
+                                <button class="save-edit-btn" onclick="saveEdit(this)">Lưu</button>
+                                <button class="cancel-edit-btn" onclick="cancelEdit(this)">Hủy</button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -557,8 +666,10 @@
             // Lưu giá trị ban đầu để có thể hủy
             const en = vocabularyItem.dataset.en;
             const vn = vocabularyItem.dataset.vn;
+            const po = vocabularyItem.dataset.po;
             vocabularyItem.dataset.originalEn = en;
             vocabularyItem.dataset.originalVn = vn;
+            vocabularyItem.dataset.originalPo = po;
         }
 
         function saveEdit(button) {
@@ -568,6 +679,7 @@
             const originalVn = vocabularyItem.dataset.originalVn;
             const newEn = vocabularyItem.querySelector('.edit-en').value.trim();
             const newVn = vocabularyItem.querySelector('.edit-vn').value.trim();
+            const newPo = vocabularyItem.querySelector('.edit-po').value.trim();
 
             if (!newEn || !newVn) {
                 alert('Vui lòng nhập đầy đủ câu tiếng Anh và nghĩa tiếng Việt');
@@ -594,7 +706,8 @@
                     return {
                         ...v,
                         en: newEn,
-                        vn: newVn
+                        vn: newVn,
+                        po: newPo
                     };
                 }
                 return v;
@@ -613,8 +726,10 @@
             // Khôi phục giá trị ban đầu
             const originalEn = vocabularyItem.dataset.originalEn;
             const originalVn = vocabularyItem.dataset.originalVn;
+            const originalPo = vocabularyItem.dataset.originalPo;
             vocabularyItem.querySelector('.edit-en').value = originalEn;
             vocabularyItem.querySelector('.edit-vn').value = originalVn;
+            vocabularyItem.querySelector('.edit-po').value = originalPo;
         }
 
         // Duplicate management functions
