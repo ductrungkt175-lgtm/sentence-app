@@ -258,7 +258,7 @@
             margin-left: 15px;
         }
 
-        .delete-word-btn {
+        .delete-word-btn, .edit-word-btn {
             background-color: #e74c3c;
             color: white;
             border: none;
@@ -269,8 +269,16 @@
             transition: background-color 0.3s;
         }
 
+        .edit-word-btn {
+            background-color: #3498db;
+        }
+
         .delete-word-btn:hover {
             background-color: #c0392b;
+        }
+
+        .edit-word-btn:hover {
+            background-color: #2980b9;
         }
 
         .no-data {
@@ -304,6 +312,67 @@
             border-radius: 5px;
             margin-bottom: 15px;
             border-left: 4px solid #f39c12;
+        }
+
+        /* CSS cho chế độ chỉnh sửa */
+        .edit-mode .sentence-en,
+        .edit-mode .sentence-vn {
+            display: none;
+        }
+
+        .edit-input {
+            display: none;
+            width: 100%;
+            padding: 8px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        .edit-mode .edit-input {
+            display: block;
+        }
+
+        .edit-actions {
+            display: none;
+            gap: 5px;
+            margin-left: 10px;
+        }
+
+        .edit-mode .edit-actions {
+            display: flex;
+        }
+
+        .edit-mode .word-actions {
+            display: none;
+        }
+
+        .save-edit-btn, .cancel-edit-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .save-edit-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .save-edit-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .cancel-edit-btn {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .cancel-edit-btn:hover {
+            background-color: #7f8c8d;
         }
     </style>
 </head>
@@ -442,11 +511,13 @@
                 const daysClass = days < 0 ? 'overdue-days' : 'word-days';
                 
                 return `
-                    <div class="vocabulary-item">
+                    <div class="vocabulary-item" data-en="${vocab.en}" data-vn="${vocab.vn}">
                         <div class="vocab-main">
                             <div class="sentence-en">${vocab.en}</div>
+                            <input type="text" class="edit-input edit-en" value="${vocab.en}" placeholder="Câu tiếng Anh">
                             <div class="sentence-po">${vocab.po || ''}</div>
-                            <div class="sentence-vn">${vocab.vn || ''}</div>
+                            <div class="sentence-vn">${vocab.vn}</div>
+                            <input type="text" class="edit-input edit-vn" value="${vocab.vn}" placeholder="Nghĩa tiếng Việt">
                         </div>
                         <div class="word-details">
                             <div class="word-level">Lv:${vocab.l || 0}</div>
@@ -454,7 +525,12 @@
                             <div class="word-last-review">${lastReview}</div>
                         </div>
                         <div class="word-actions">
+                            <button class="edit-word-btn" onclick="enableEditMode(this)">Sửa</button>
                             <button class="delete-word-btn" onclick="deleteWord('${vocab.en.replace(/'/g, "\\'")}', '${vocab.vn.replace(/'/g, "\\'")}')">Xóa</button>
+                        </div>
+                        <div class="edit-actions">
+                            <button class="save-edit-btn" onclick="saveEdit(this)">Lưu</button>
+                            <button class="cancel-edit-btn" onclick="cancelEdit(this)">Hủy</button>
                         </div>
                     </div>
                 `;
@@ -471,6 +547,74 @@
                 displayVocabulariesInFolder();
                 alert('Đã xóa câu!');
             }
+        }
+
+        // Edit functions
+        function enableEditMode(button) {
+            const vocabularyItem = button.closest('.vocabulary-item');
+            vocabularyItem.classList.add('edit-mode');
+            
+            // Lưu giá trị ban đầu để có thể hủy
+            const en = vocabularyItem.dataset.en;
+            const vn = vocabularyItem.dataset.vn;
+            vocabularyItem.dataset.originalEn = en;
+            vocabularyItem.dataset.originalVn = vn;
+        }
+
+        function saveEdit(button) {
+            const vocabularyItem = button.closest('.vocabulary-item');
+            const folderCode = getFolderCodeFromURL();
+            const originalEn = vocabularyItem.dataset.originalEn;
+            const originalVn = vocabularyItem.dataset.originalVn;
+            const newEn = vocabularyItem.querySelector('.edit-en').value.trim();
+            const newVn = vocabularyItem.querySelector('.edit-vn').value.trim();
+
+            if (!newEn || !newVn) {
+                alert('Vui lòng nhập đầy đủ câu tiếng Anh và nghĩa tiếng Việt');
+                return;
+            }
+
+            // Kiểm tra xem câu mới có trùng với câu khác không (trừ chính nó)
+            const vocabularies = getVocabularies();
+            const isDuplicate = vocabularies.some(v => 
+                v.s === folderCode && 
+                v.en === newEn && 
+                v.vn === newVn &&
+                !(v.en === originalEn && v.vn === originalVn)
+            );
+
+            if (isDuplicate) {
+                alert('Câu này đã tồn tại trong thư mục!');
+                return;
+            }
+
+            // Cập nhật dữ liệu
+            const updatedVocabularies = vocabularies.map(v => {
+                if (v.s === folderCode && v.en === originalEn && v.vn === originalVn) {
+                    return {
+                        ...v,
+                        en: newEn,
+                        vn: newVn
+                    };
+                }
+                return v;
+            });
+
+            saveVocabularies(updatedVocabularies);
+            vocabularyItem.classList.remove('edit-mode');
+            displayVocabulariesInFolder();
+            alert('Đã cập nhật câu!');
+        }
+
+        function cancelEdit(button) {
+            const vocabularyItem = button.closest('.vocabulary-item');
+            vocabularyItem.classList.remove('edit-mode');
+            
+            // Khôi phục giá trị ban đầu
+            const originalEn = vocabularyItem.dataset.originalEn;
+            const originalVn = vocabularyItem.dataset.originalVn;
+            vocabularyItem.querySelector('.edit-en').value = originalEn;
+            vocabularyItem.querySelector('.edit-vn').value = originalVn;
         }
 
         // Duplicate management functions
@@ -684,7 +828,7 @@
             }
         }
 
-        // UI control functions - ĐÃ FIX LỖI
+        // UI control functions
         function toggleJsonInputFunction() {
             const container = document.getElementById('jsonInputContainer');
             const toggleBtn = document.getElementById('toggleJsonInput');
@@ -711,7 +855,7 @@
             if (toggleBtn) toggleBtn.textContent = '📝 Hoặc nhập trực tiếp JSON';
         }
 
-        // Initialize - ĐÃ FIX LỖI
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             const folderCode = getFolderCodeFromURL();
             if (!folderCode) {
@@ -728,7 +872,7 @@
                 alert('Có lỗi khi tải dữ liệu thư mục. Vui lòng kiểm tra lại.');
             }
 
-            // Gắn sự kiện - ĐÃ FIX LỖI
+            // Gắn sự kiện
             const jsonFile = document.getElementById('jsonFile');
             const deleteFolderBtn = document.getElementById('deleteFolderBtn');
             const importJsonText = document.getElementById('importJsonText');
