@@ -333,6 +333,36 @@
         let isCompleted = false;
         let hasSpoken = false;
 
+        // Đối tượng ánh xạ các phím thường bị nhầm lẫn
+        const adjacentKeys = {
+            'q': ['w', 'a', 's'],
+            'w': ['q', 'e', 'a', 's', 'd'],
+            'e': ['w', 'r', 's', 'd', 'f'],
+            'r': ['e', 't', 'd', 'f', 'g'],
+            't': ['r', 'y', 'f', 'g', 'h'],
+            'y': ['t', 'u', 'g', 'h', 'j'],
+            'u': ['y', 'i', 'h', 'j', 'k'],
+            'i': ['u', 'o', 'j', 'k', 'l'],
+            'o': ['i', 'p', 'k', 'l'],
+            'p': ['o', 'l'],
+            'a': ['q', 'w', 's', 'z', 'x'],
+            's': ['q', 'w', 'e', 'a', 'd', 'z', 'x', 'c'],
+            'd': ['w', 'e', 'r', 's', 'f', 'x', 'c', 'v'],
+            'f': ['e', 'r', 't', 'd', 'g', 'c', 'v', 'b'],
+            'g': ['r', 't', 'y', 'f', 'h', 'v', 'b', 'n'],
+            'h': ['t', 'y', 'u', 'g', 'j', 'b', 'n', 'm'],
+            'j': ['y', 'u', 'i', 'h', 'k', 'n', 'm'],
+            'k': ['u', 'i', 'o', 'j', 'l', 'm'],
+            'l': ['i', 'o', 'p', 'k'],
+            'z': ['a', 's', 'x'],
+            'x': ['a', 's', 'd', 'z', 'c'],
+            'c': ['s', 'd', 'f', 'x', 'v'],
+            'v': ['d', 'f', 'g', 'c', 'b'],
+            'b': ['f', 'g', 'h', 'v', 'n'],
+            'n': ['g', 'h', 'j', 'b', 'm'],
+            'm': ['h', 'j', 'k', 'n']
+        };
+
         // DOM Elements
         const meaningElement = document.getElementById('meaning');
         const fullSentenceElement = document.getElementById('fullSentence');
@@ -564,12 +594,17 @@
             }
         }
 
-        // Xử lý gõ phím
+        // Xử lý gõ phím với khả năng chấp nhận phím gần kề
         function handleTyping(typedChar) {
             if (currentWordIndex >= currentWords.length || isCompleted) return;
 
             const correctChar = currentFirstLetters[currentWordIndex];
-            const isCorrect = typedChar === correctChar;
+            let isCorrect = typedChar === correctChar;
+
+            // Nếu gõ sai nhưng là phím gần kề thì vẫn tính là đúng
+            if (!isCorrect && adjacentKeys[correctChar] && adjacentKeys[correctChar].includes(typedChar)) {
+                isCorrect = true;
+            }
 
             const currentState = resultProgress[currentWordIndex];
 
