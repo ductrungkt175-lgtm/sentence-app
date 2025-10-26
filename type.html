@@ -206,7 +206,7 @@
         }
 
         .next-btn {
-            z-index: 10; /* đảm bảo nút nằm trên input ẩn */
+            z-index: 10;
             width: 100%;
             padding: 15px;
             background: #2196f3;
@@ -319,8 +319,8 @@
         // Biến toàn cục
         let sentences = [];
         let currentSentenceIndex = 0;
-        let currentRound = 1; // 1 hoặc 2
-        let roundResults = {1: {}, 2: {}}; // Lưu kết quả từng câu từng vòng
+        let currentRound = 1;
+        let roundResults = {1: {}, 2: {}};
         
         let currentSentence = null;
         let currentWords = [];
@@ -396,8 +396,11 @@
             
             for (let round = 1; round <= 2; round++) {
                 Object.values(roundResults[round]).forEach(result => {
-                    if (result === 'perfect') correctCount++;
-                    else if (result === 'imperfect') wrongCount++;
+                    if (result && result.perfectCount >= result.wordCount) {
+                        correctCount++;
+                    } else if (result) {
+                        wrongCount++;
+                    }
                 });
             }
             
@@ -564,10 +567,17 @@
             const allTyped = !resultProgress.includes(0);
             if (allTyped && !isCompleted) {
                 isCompleted = true;
-                const allPerfect = resultProgress.every(v => v === 1);
                 
-                // Lưu kết quả vòng hiện tại
-                roundResults[currentRound][currentSentenceIndex] = allPerfect ? 'perfect' : 'imperfect';
+                // Lưu kết quả chi tiết vòng hiện tại
+                const perfectCount = resultProgress.filter(v => v === 1).length;
+                const errorCount = resultProgress.filter(v => v === 2 || v === 3).length;
+                
+                roundResults[currentRound][currentSentenceIndex] = {
+                    wordResults: resultProgress.slice(),
+                    wordCount: currentWords.length,
+                    perfectCount: perfectCount,
+                    errorCount: errorCount
+                };
                 
                 // Hiển thị phiên âm khi hoàn thành câu
                 if (currentSentence.po || currentSentence.p) {
@@ -653,7 +663,7 @@
 
         // Chuyển đến câu tiếp theo
         function goToNextSentence() {
-            window.speechSynthesis.cancel(); // Dừng phát âm trước khi chuyển câu
+            window.speechSynthesis.cancel();
             if (currentSentenceIndex < sentences.length - 1) {
                 currentSentenceIndex++;
                 loadCurrentSentence();

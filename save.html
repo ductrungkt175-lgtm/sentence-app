@@ -172,6 +172,40 @@
             color: #f44336;
         }
 
+        .word-details {
+            margin: 10px 0;
+        }
+
+        .word-breakdown {
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .word-status {
+            display: inline-block;
+            padding: 2px 5px;
+            margin: 1px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .word-perfect {
+            background: #1a331a;
+            color: #4caf50;
+        }
+
+        .word-error {
+            background: #331a1a;
+            color: #f44336;
+        }
+
+        .word-untouched {
+            background: #1a1a1a;
+            color: #666;
+        }
+
         .actions {
             text-align: center;
             margin-top: 30px;
@@ -216,6 +250,27 @@
             color: #666;
             padding: 40px;
             font-style: italic;
+        }
+
+        @media (max-width: 600px) {
+            .sentence-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .round-results {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .summary-stats {
+                gap: 10px;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
@@ -274,6 +329,22 @@
             return now + (level in intervals ? intervals[level] : intervals[10]);
         }
 
+        // Kiểm tra xem một vòng có pass không (với ngưỡng cho phép)
+        function checkIfRoundPassed(roundData) {
+            if (!roundData) return false;
+            
+            const { wordCount, errorCount } = roundData;
+            
+            // Ngưỡng sai cho phép dựa trên độ dài câu
+            let allowedErrors = 0;
+            if (wordCount > 27) allowedErrors = 3;
+            else if (wordCount > 16) allowedErrors = 2;
+            else if (wordCount > 8) allowedErrors = 1;
+            // Dưới 8 từ: allowedErrors = 0
+            
+            return errorCount <= allowedErrors;
+        }
+
         // Xử lý kết quả và cập nhật level
         function processResults() {
             const resultsParam = getUrlParam('results');
@@ -291,8 +362,8 @@
 
                 // Xử lý từng câu
                 resultsData.processedResults = resultsData.sentences.map((sentence, index) => {
-                    const round1Result = resultsData.roundResults[1][index];
-                    const round2Result = resultsData.roundResults[2][index];
+                    const round1Data = resultsData.roundResults[1][index];
+                    const round2Data = resultsData.roundResults[2][index];
                     
                     // Tìm câu trong vocabularies
                     const vocabIndex = vocabularies.findIndex(vocab => 
@@ -303,13 +374,19 @@
                     let oldLevel = 0;
                     let newLevel = 0;
                     let levelChange = 'same';
+                    let round1Passed = false;
+                    let round2Passed = false;
 
                     if (vocabIndex !== -1) {
                         oldLevel = vocabularies[vocabIndex].l || 0;
                         
-                        // Quy tắc: cả 2 vòng đều perfect mới lên level, không thì về level 1
-                        if (round1Result === 'perfect' && round2Result === 'perfect') {
-                            newLevel = oldLevel + 1;
+                        // Kiểm tra kết quả cả 2 vòng với ngưỡng cho phép
+                        round1Passed = checkIfRoundPassed(round1Data);
+                        round2Passed = checkIfRoundPassed(round2Data);
+                        
+                        // Quy tắc mới: cả 2 vòng đều pass mới lên level
+                        if (round1Passed && round2Passed) {
+                            newLevel = Math.min(oldLevel + 1, 10); // Giới hạn level tối đa là 10
                             levelChange = 'up';
                             totalUp++;
                         } else {
@@ -334,8 +411,10 @@
 
                     return {
                         sentence: sentence,
-                        round1Result: round1Result,
-                        round2Result: round2Result,
+                        round1Data: round1Data,
+                        round2Data: round2Data,
+                        round1Passed: round1Passed,
+                        round2Passed: round2Passed,
                         oldLevel: oldLevel,
                         newLevel: newLevel,
                         levelChange: levelChange
@@ -398,6 +477,30 @@
             `;
         }
 
+        // Hàm hiển thị chi tiết từng từ
+        function getWordDetails(roundData) {
+            if (!roundData || !roundData.wordResults) return '';
+            
+            let html = '<div class="word-breakdown">';
+            roundData.wordResults.forEach((result, index) => {
+                let statusClass = 'word-untouched';
+                let statusText = '?';
+                
+                if (result === 1) {
+                    statusClass = 'word-perfect';
+                    statusText = '✓';
+                } else if (result === 2 || result === 3) {
+                    statusClass = 'word-error';
+                    statusText = '✗';
+                }
+                
+                html += `<span class="word-status ${statusClass}" title="Từ ${index + 1}">${statusText}</span>`;
+            });
+            html += '</div>';
+            
+            return html;
+        }
+
         // Hiển thị kết quả chi tiết
         function displayDetailedResults() {
             const resultsElement = document.getElementById('sentencesResults');
@@ -409,6 +512,19 @@
 
             resultsElement.innerHTML = resultsData.processedResults.map(result => {
                 const levelClass = `level-${result.levelChange}`;
+                const round1Class = result.round1Passed ? 'round-perfect' : 'round-imperfect';
+                const round2Class = result.round2Passed ? 'round-perfect' : 'round-imperfect';
+                
+                // Hiển thị chi tiết từng từ
+                const wordDetails1 = getWordDetails(result.round1Data);
+                const wordDetails2 = getWordDetails(result.round2Data);
+                
+                // Tính ngưỡng cho phép
+                const wordCount = result.round2Data ? result.round2Data.wordCount : 0;
+                let allowedErrors = 0;
+                if (wordCount > 27) allowedErrors = 3;
+                else if (wordCount > 16) allowedErrors = 2;
+                else if (wordCount > 8) allowedErrors = 1;
                 
                 return `
                     <div class="result-item">
@@ -420,12 +536,23 @@
                                 <span class="level-new">Lv${result.newLevel}</span>
                             </div>
                         </div>
-                        <div class="round-results">
-                            <div class="round-result ${result.round1Result === 'perfect' ? 'round-perfect' : 'round-imperfect'}">
-                                Vòng 1: ${result.round1Result === 'perfect' ? '✅ Hoàn hảo' : '❌ Cần cải thiện'}
+                        
+                        <div class="word-details">
+                            <div><strong>Vòng 1:</strong> ${wordDetails1}</div>
+                            <div><strong>Vòng 2:</strong> ${wordDetails2}</div>
+                            <div style="margin-top: 5px; font-size: 0.8rem; color: #888;">
+                                Cho phép sai: ${allowedErrors} từ (${wordCount} từ)
                             </div>
-                            <div class="round-result ${result.round2Result === 'perfect' ? 'round-perfect' : 'round-imperfect'}">
-                                Vòng 2: ${result.round2Result === 'perfect' ? '✅ Hoàn hảo' : '❌ Cần cải thiện'}
+                        </div>
+                        
+                        <div class="round-results">
+                            <div class="round-result ${round1Class}">
+                                Vòng 1: ${result.round1Passed ? '✅ Đạt' : '❌ Chưa đạt'} 
+                                (${result.round1Data ? result.round1Data.perfectCount + '/' + result.round1Data.wordCount + ' từ đúng' : 'N/A'})
+                            </div>
+                            <div class="round-result ${round2Class}">
+                                Vòng 2: ${result.round2Passed ? '✅ Đạt' : '❌ Chưa đạt'}
+                                (${result.round2Data ? result.round2Data.perfectCount + '/' + result.round2Data.wordCount + ' từ đúng' : 'N/A'})
                             </div>
                         </div>
                     </div>
