@@ -5,227 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Học theo thư mục</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #000;
-            color: #fff;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        h1 {
-            color: #fff;
-            margin-bottom: 20px;
-            font-size: 2rem;
-        }
-
-        .back-button {
-            background-color: #666;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-
-        .back-button:hover {
-            background-color: #555;
-        }
-
-        .folders-list {
-            margin-bottom: 30px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-        }
-
-        .folder-item {
-            background-color: #222;
-            border: 1px solid #333;
-            border-radius: 10px;
-            padding: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .folder-item:hover {
-            background-color: #2a2a2a;
-            border-color: #444;
-        }
-
-        .folder-item.selected {
-            background-color: #1a3d5c;
-            border-color: #1a73e8;
-        }
-
-        .folder-name {
-            font-size: 1.2rem;
-            color: #1a73e8;
-            margin-bottom: 5px;
-        }
-
-        .folder-stats {
-            color: #888;
-            font-size: 0.9rem;
-        }
-
-        .folder-details {
-            display: none;
-            margin-top: 30px;
-        }
-
-        .sentence-item {
-            background-color: #222;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: all 0.3s;
-        }
-
-        .sentence-item.selected {
-            background-color: #2d5016;
-            border-color: #4caf50;
-        }
-
-        .sentence-order {
-            color: #888;
-            font-weight: bold;
-            min-width: 30px;
-            text-align: center;
-        }
-
-        .sentence-content {
-            flex: 1;
-        }
-
-        .sentence-en {
-            font-size: 1.1rem;
-            color: #fff;
-            margin-bottom: 5px;
-        }
-
-        .sentence-vn {
-            font-size: 0.9rem;
-            color: #888;
-        }
-
-        .sentence-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .move-controls, .fl-controls {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .control-button {
-            background-color: #444;
-            color: white;
-            border: none;
-            width: 30px;
-            height: 30px;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .control-button:hover {
-            background-color: #555;
-        }
-
-        .fl-value {
-            color: #ffa500;
-            font-weight: bold;
-            min-width: 30px;
-            text-align: center;
-            font-size: 1.1rem;
-        }
-
-        .actions {
-            margin-top: 20px;
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        .reset-button {
-            background-color: #ff5722;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .reset-button:hover {
-            background-color: #e64a19;
-        }
-
-        .start-button {
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .start-button:hover {
-            background-color: #45a049;
-        }
-
-        .no-data {
-            text-align: center;
-            color: #666;
-            padding: 40px;
-            font-style: italic;
-        }
-
-        .selection-info {
-            text-align: center;
-            margin: 20px 0;
-            color: #ccc;
-            font-size: 1.1rem;
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            color: #fff;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #333;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #000; color: #fff; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { color: #fff; margin-bottom: 20px; font-size: 2rem; }
+        .back-button { background-color: #666; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; margin-bottom: 20px; }
+        .back-button:hover { background-color: #555; }
+        .folders-list { margin-bottom: 30px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+        .folder-item { background-color: #222; border: 1px solid #333; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; }
+        .folder-item:hover { background-color: #2a2a2a; border-color: #444; }
+        .folder-item.selected { background-color: #1a3d5c; border-color: #1a73e8; }
+        .folder-name { font-size: 1.2rem; color: #1a73e8; margin-bottom: 5px; }
+        .folder-stats { color: #888; font-size: 0.9rem; }
+        .folder-details { display: none; margin-top: 30px; }
+        .sentence-item { background-color: #222; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px; transition: all 0.15s; cursor: pointer; }
+        .sentence-item.selected { background-color: #2d5016; border-color: #4caf50; }
+        .sentence-order { color: #888; font-weight: bold; min-width: 30px; text-align: center; }
+        .sentence-content { flex: 1; }
+        .sentence-en { font-size: 1.1rem; color: #fff; margin-bottom: 5px; }
+        .sentence-vn { font-size: 0.9rem; color: #888; }
+        .sentence-controls { display: flex; align-items: center; gap: 10px; }
+        .move-controls { display: flex; align-items: center; gap: 5px; }
+        .control-button { background-color: #444; color: white; border: none; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .control-button[disabled] { opacity: 0.5; cursor: default; }
+        .control-button:hover:not([disabled]) { background-color: #555; }
+        .actions { margin-top: 20px; text-align: center; display: flex; justify-content: center; gap: 15px; }
+        .start-button { background-color: #4caf50; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 1rem; }
+        .start-button:hover { background-color: #45a049; }
+        .no-data { text-align: center; color: #666; padding: 40px; font-style: italic; }
+        .selection-info { text-align: center; margin: 20px 0; color: #ccc; font-size: 1.1rem; }
+        .section-title { font-size: 1.5rem; color: #fff; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #333; }
+        .hint { color: #aaa; font-size: 0.9rem; margin-top: 6px; text-align: center; }
     </style>
 </head>
 <body>
@@ -243,13 +54,15 @@
         <div class="folder-details" id="folderDetails">
             <div class="section-title" id="selectedFolderName"></div>
             <div class="selection-info">
-                Đã chọn <span id="selectedCount">0</span>/5 câu (ưu tiên FL thấp nhất)
+                Đã chọn <span id="selectedCount">0</span> câu
+                <div class="hint">Click vào câu để chọn / bỏ chọn. Có thể chọn nhiều câu.</div>
             </div>
+
             <div class="sentences-list" id="sentencesList">
                 <!-- Danh sách câu trong thư mục -->
             </div>
+
             <div class="actions">
-                <button class="reset-button" id="resetFlButton">Reset FL toàn bộ</button>
                 <button class="start-button" id="startButton">Bắt đầu học</button>
             </div>
         </div>
@@ -258,7 +71,7 @@
     <script>
         let currentFolderCode = null;
         let currentFolderSentences = [];
-        let selectedSentences = [];
+        let selectedIndices = new Set();
 
         function getFolders() {
             return JSON.parse(localStorage.getItem('folders')) || [];
@@ -287,8 +100,8 @@
                 const selectedClass = currentFolderCode === folder.code ? 'selected' : '';
                 
                 return `
-                    <div class="folder-item ${selectedClass}" onclick="selectFolder('${folder.code}', '${folder.name}')">
-                        <div class="folder-name">${folder.name}</div>
+                    <div class="folder-item ${selectedClass}" onclick="selectFolder('${folder.code}', '${escapeHtml(folder.name)}')">
+                        <div class="folder-name">${escapeHtml(folder.name)}</div>
                         <div class="folder-stats">${folderVocabs.length} câu</div>
                     </div>
                 `;
@@ -299,72 +112,44 @@
             currentFolderCode = folderCode;
             document.getElementById('selectedFolderName').textContent = folderName;
             document.getElementById('folderDetails').style.display = 'block';
-            
-            // Cập nhật UI
+            selectedIndices.clear(); // reset selection when change folder
             displayFolders();
             loadFolderSentences();
         }
 
         function loadFolderSentences() {
             const vocabularies = getVocabularies();
+            // giữ nguyên thứ tự lưu trong vocabularies (đã lưu khi di chuyển)
             currentFolderSentences = vocabularies.filter(v => v.s === currentFolderCode);
-            updateSentenceSelection();
+            updateSentenceList();
         }
 
-        // Chọn 5 câu có FL thấp nhất
-        function getPrioritySentences(sentences) {
-            // Tạo bản sao để không ảnh hưởng đến dữ liệu gốc
-            const sortedSentences = [...sentences];
-            
-            // Sắp xếp: ưu tiên FL thấp nhất, nếu bằng nhau thì giữ thứ tự ban đầu
-            sortedSentences.sort((a, b) => {
-                const flA = a.fl || 0;
-                const flB = b.fl || 0;
-                return flA - flB;
-            });
-            
-            // Lấy 5 câu đầu tiên
-            return sortedSentences.slice(0, 5);
-        }
-
-        function updateSentenceSelection() {
+        function updateSentenceList() {
             const sentencesList = document.getElementById('sentencesList');
-            
-            if (currentFolderSentences.length === 0) {
+            if (!currentFolderSentences || currentFolderSentences.length === 0) {
                 sentencesList.innerHTML = '<div class="no-data">Thư mục này chưa có câu nào.</div>';
                 document.getElementById('selectedCount').textContent = '0';
                 return;
             }
 
-            // Chọn 5 câu ưu tiên
-            selectedSentences = getPrioritySentences(currentFolderSentences);
-            document.getElementById('selectedCount').textContent = selectedSentences.length;
+            document.getElementById('selectedCount').textContent = selectedIndices.size;
 
-            // Hiển thị tất cả câu, đánh dấu những câu được chọn
             sentencesList.innerHTML = currentFolderSentences.map((sentence, index) => {
-                const fl = sentence.fl || 0;
-                const isSelected = selectedSentences.some(s => 
-                    (s.en === sentence.en || s.w === sentence.w) && s.s === sentence.s
-                );
-                
+                const isSelected = selectedIndices.has(index);
                 const itemClass = isSelected ? 'sentence-item selected' : 'sentence-item';
-                
+                const en = sentence.en || sentence.w || '';
+                const vn = sentence.vn || sentence.m || '';
                 return `
-                    <div class="${itemClass}" data-index="${index}">
+                    <div class="${itemClass}" data-index="${index}" onclick="toggleSelect(${index})">
                         <div class="sentence-order">${index + 1}</div>
                         <div class="sentence-content">
-                            <div class="sentence-en">${sentence.en || sentence.w}</div>
-                            <div class="sentence-vn">${sentence.vn || sentence.m}</div>
+                            <div class="sentence-en">${escapeHtml(en)}</div>
+                            <div class="sentence-vn">${escapeHtml(vn)}</div>
                         </div>
-                        <div class="sentence-controls">
+                        <div class="sentence-controls" onclick="event.stopPropagation();">
                             <div class="move-controls">
-                                <button class="control-button" onclick="moveSentenceUp(${index})" ${index === 0 ? 'disabled' : ''}>↑</button>
-                                <button class="control-button" onclick="moveSentenceDown(${index})" ${index === currentFolderSentences.length - 1 ? 'disabled' : ''}>↓</button>
-                            </div>
-                            <div class="fl-controls">
-                                <button class="control-button" onclick="decreaseFL(${index})">-</button>
-                                <div class="fl-value">${fl}</div>
-                                <button class="control-button" onclick="increaseFL(${index})">+</button>
+                                <button class="control-button" onclick="moveSentenceUp(${index})" ${index === 0 ? 'disabled' : ''} title="Lên">↑</button>
+                                <button class="control-button" onclick="moveSentenceDown(${index})" ${index === currentFolderSentences.length - 1 ? 'disabled' : ''} title="Xuống">↓</button>
                             </div>
                         </div>
                     </div>
@@ -372,103 +157,83 @@
             }).join('');
         }
 
+        function toggleSelect(index) {
+            if (selectedIndices.has(index)) selectedIndices.delete(index);
+            else selectedIndices.add(index);
+            document.getElementById('selectedCount').textContent = selectedIndices.size;
+            updateSentenceList();
+        }
+
         function moveSentenceUp(index) {
             if (index <= 0) return;
-            
-            // Hoán đổi vị trí
-            const temp = currentFolderSentences[index];
-            currentFolderSentences[index] = currentFolderSentences[index - 1];
-            currentFolderSentences[index - 1] = temp;
-            
-            // Cập nhật localStorage
+            // hoán đổi
+            const tmp = currentFolderSentences[index - 1];
+            currentFolderSentences[index - 1] = currentFolderSentences[index];
+            currentFolderSentences[index] = tmp;
+            // cập nhật set selectedIndices: chuyển những index tương ứng
+            const newSelected = new Set();
+            selectedIndices.forEach(i => {
+                if (i === index) newSelected.add(index - 1);
+                else if (i === index - 1) newSelected.add(index);
+                else newSelected.add(i);
+            });
+            selectedIndices = newSelected;
             updateVocabulariesOrder();
-            updateSentenceSelection();
+            updateSentenceList();
         }
 
         function moveSentenceDown(index) {
             if (index >= currentFolderSentences.length - 1) return;
-            
-            // Hoán đổi vị trí
-            const temp = currentFolderSentences[index];
-            currentFolderSentences[index] = currentFolderSentences[index + 1];
-            currentFolderSentences[index + 1] = temp;
-            
-            // Cập nhật localStorage
+            const tmp = currentFolderSentences[index + 1];
+            currentFolderSentences[index + 1] = currentFolderSentences[index];
+            currentFolderSentences[index] = tmp;
+            const newSelected = new Set();
+            selectedIndices.forEach(i => {
+                if (i === index) newSelected.add(index + 1);
+                else if (i === index + 1) newSelected.add(index);
+                else newSelected.add(i);
+            });
+            selectedIndices = newSelected;
             updateVocabulariesOrder();
-            updateSentenceSelection();
+            updateSentenceList();
         }
 
         function updateVocabulariesOrder() {
             const allVocabularies = getVocabularies();
-            
-            // Xóa tất cả câu của thư mục hiện tại
+            // giữ lại các câu không thuộc folder hiện tại
             const otherVocabularies = allVocabularies.filter(v => v.s !== currentFolderCode);
-            
-            // Thêm lại theo thứ tự mới
+            // thêm lại folder hiện tại theo thứ tự hiện tại
             const updatedVocabularies = [...otherVocabularies, ...currentFolderSentences];
             saveVocabularies(updatedVocabularies);
         }
 
-        function increaseFL(index) {
-            const sentence = currentFolderSentences[index];
-            if (!sentence.fl) sentence.fl = 0;
-            sentence.fl += 1;
-            
-            // Cập nhật localStorage
-            updateVocabulariesOrder();
-            updateSentenceSelection();
-        }
-
-        function decreaseFL(index) {
-            const sentence = currentFolderSentences[index];
-            if (!sentence.fl) sentence.fl = 0;
-            if (sentence.fl > 0) {
-                sentence.fl -= 1;
-                
-                // Cập nhật localStorage
-                updateVocabulariesOrder();
-                updateSentenceSelection();
-            }
-        }
-
-        function resetFl() {
-            if (!currentFolderCode) return;
-
-            if (!confirm('Bạn có chắc muốn reset FL cho tất cả câu trong thư mục này?')) {
-                return;
-            }
-
-            currentFolderSentences.forEach(sentence => {
-                sentence.fl = 0;
-            });
-            
-            updateVocabulariesOrder();
-            updateSentenceSelection();
-            alert('Đã reset FL cho tất cả câu trong thư mục.');
-        }
-
         function startPractice() {
-            if (!currentFolderCode || selectedSentences.length === 0) {
-                alert('Không có câu nào để học.');
+            if (!currentFolderCode) {
+                alert('Chưa chọn thư mục.');
                 return;
             }
-
-            // Tăng FL cho các câu được chọn (chỉ cần chọn là tăng FL)
-            selectedSentences.forEach(sentence => {
-                if (!sentence.fl) sentence.fl = 0;
-                sentence.fl += 1;
-            });
-            
-            // Cập nhật localStorage
-            updateVocabulariesOrder();
-            
-            const encodedSentences = encodeURIComponent(JSON.stringify(selectedSentences));
+            if (selectedIndices.size === 0) {
+                alert('Vui lòng chọn ít nhất 1 câu để bắt đầu học.');
+                return;
+            }
+            // Lấy mảng câu được chọn theo thứ tự xuất hiện trong currentFolderSentences
+            const selected = Array.from(selectedIndices).sort((a,b) => a - b).map(i => currentFolderSentences[i]);
+            const encodedSentences = encodeURIComponent(JSON.stringify(selected));
             window.location.href = `type.html?sentences=${encodedSentences}`;
+        }
+
+        function escapeHtml(text) {
+            if (!text && text !== 0) return '';
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
 
         function init() {
             displayFolders();
-            document.getElementById('resetFlButton').addEventListener('click', resetFl);
             document.getElementById('startButton').addEventListener('click', startPractice);
         }
 
