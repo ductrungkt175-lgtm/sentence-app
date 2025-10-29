@@ -329,18 +329,14 @@
             return now + (level in intervals ? intervals[level] : intervals[10]);
         }
 
-        // Kiểm tra xem một vòng có pass không (với ngưỡng cho phép)
+        // Kiểm tra xem một vòng có pass không (với ngưỡng cho phép mới)
         function checkIfRoundPassed(roundData) {
             if (!roundData) return false;
             
             const { wordCount, errorCount } = roundData;
             
-            // Ngưỡng sai cho phép dựa trên độ dài câu
-            let allowedErrors = 0;
-            if (wordCount > 27) allowedErrors = 3;
-            else if (wordCount > 16) allowedErrors = 2;
-            else if (wordCount > 8) allowedErrors = 1;
-            // Dưới 8 từ: allowedErrors = 0
+            // Ngưỡng sai cho phép mới: cứ 5 từ cho sai 1 từ
+            let allowedErrors = Math.floor(wordCount / 5);
             
             return errorCount <= allowedErrors;
         }
@@ -380,7 +376,7 @@
                     if (vocabIndex !== -1) {
                         oldLevel = vocabularies[vocabIndex].l || 0;
                         
-                        // Kiểm tra kết quả cả 2 vòng với ngưỡng cho phép
+                        // Kiểm tra kết quả cả 2 vòng với ngưỡng cho phép mới
                         round1Passed = checkIfRoundPassed(round1Data);
                         round2Passed = checkIfRoundPassed(round2Data);
                         
@@ -519,12 +515,9 @@
                 const wordDetails1 = getWordDetails(result.round1Data);
                 const wordDetails2 = getWordDetails(result.round2Data);
                 
-                // Tính ngưỡng cho phép
+                // Tính ngưỡng cho phép mới
                 const wordCount = result.round2Data ? result.round2Data.wordCount : 0;
-                let allowedErrors = 0;
-                if (wordCount > 27) allowedErrors = 3;
-                else if (wordCount > 16) allowedErrors = 2;
-                else if (wordCount > 8) allowedErrors = 1;
+                let allowedErrors = Math.floor(wordCount / 5);
                 
                 return `
                     <div class="result-item">
@@ -541,7 +534,7 @@
                             <div><strong>Vòng 1:</strong> ${wordDetails1}</div>
                             <div><strong>Vòng 2:</strong> ${wordDetails2}</div>
                             <div style="margin-top: 5px; font-size: 0.8rem; color: #888;">
-                                Cho phép sai: ${allowedErrors} từ (${wordCount} từ)
+                                Cho phép sai: ${allowedErrors} từ (${wordCount} từ, tỷ lệ 5:1)
                             </div>
                         </div>
                         
