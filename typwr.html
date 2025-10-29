@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luyện gõ câu</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            position: relative;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+            padding-top: 5px;
+        }
+        
+        h1 {
+            color: #fff;
+            margin-bottom: 5px;
+            font-size: 1.5rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .session-stats {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            color: #888;
+            font-size: 0.9rem;
+            min-height: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            padding: 8px 12px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 50px;
+        }
+        
+        .control-btn:hover {
+            background: #444;
+        }
+        
+        .control-btn.active {
+            background: #555;
+            border-color: #777;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: #333;
+            min-width: 70px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            z-index: 1;
+            border-radius: 6px;
+            overflow: hidden;
+            top: 100%;
+            left: 0;
+            margin-top: 5px;
+        }
+        
+        .dropdown-content button {
+            color: white;
+            padding: 8px 12px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            border: none;
+            background: #333;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        
+        .dropdown-content button:hover {
+            background: #444;
+        }
+        
+        .dropdown.active .dropdown-content {
+            display: block;
+        }
+        
+        .text-display {
+            margin-bottom: 15px;
+            text-align: center;
+            line-height: 1.3;
+        }
+        
+        .meaning {
+            font-size: 1.1rem;
+            color: #ccc;
+            margin-bottom: 3px;
+        }
+        
+        .full-sentence {
+            font-size: 1.1rem;
+            color: #888;
+            margin-bottom: 3px;
+        }
+        
+        .phonetic {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .typing-area {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            margin-top: 10px;
+        }
+        
+        .input-display {
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 20px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 0 10px;
+            cursor: pointer;
+        }
+        
+        .word {
+            display: inline-block;
+            padding: 8px 10px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .word.correct {
+            background: #1a331a;
+            border-color: #2d5a2d;
+            color: #4caf50;
+        }
+        
+        .word.incorrect {
+            background: #331a1a;
+            border-color: #5a2d2d;
+            color: #f44336;
+        }
+        
+        .word.current {
+            background: #1a1a33;
+            border-color: #2d2d5a;
+        }
+        
+        .hidden-input {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .next-btn {
+            z-index: 10;
+            width: 100%;
+            padding: 15px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+        
+        .next-btn:hover {
+            background: #1976d2;
+        }
+        
+        .next-btn:active {
+            transform: translateY(1px);
+        }
+        
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+            
+            h1 {
+                font-size: 1.3rem;
+            }
+            
+            .input-display {
+                font-size: 1.3rem;
+                gap: 4px;
+            }
+            
+            .word {
+                padding: 6px 8px;
+                min-width: 40px;
+                font-size: 1.2rem;
+            }
+            
+            .control-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+                min-width: 45px;
+            }
+            
+            .meaning, .full-sentence {
+                font-size: 1rem;
+            }
+            
+            .session-stats {
+                top: 10px;
+                right: 10px;
+                font-size: 0.8rem;
+            }
+            
+            .text-display {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Luyện gõ câu</h1>
+        </header>
+        
+        <div class="session-stats" id="sessionStats"></div>
+        
+        <div class="controls">
+            <button class="control-btn" id="vnBtn">VN</button>
+            <button class="control-btn" id="enBtn">EN</button>
+            <div class="dropdown">
+                <button class="control-btn" id="speedBtn">1x</button>
+                <div class="dropdown-content">
+                    <button data-speed="0.5">0.5x</button>
+                    <button data-speed="0.75">0.75x</button>
+                    <button data-speed="1">1x</button>
+                    <button data-speed="1.25">1.25x</button>
+                    <button data-speed="1.5">1.5x</button>
+                    <button data-speed="1.75">1.75x</button>
+                </div>
+            </div>
+            <button class="control-btn" id="speakBtn">🔊</button>
+        </div>
+        
+        <div class="text-display">
+            <div class="meaning" id="meaning"></div>
+            <div class="full-sentence hidden" id="fullSentence"></div>
+            <div class="phonetic hidden" id="phonetic"></div>
+        </div>
+        
+        <div class="typing-area">
+            <div class="input-display" id="inputDisplay"></div>
+            <input type="text" id="hiddenInput" class="hidden-input" autocomplete="off" spellcheck="false" autofocus>
+            
+            <button class="next-btn hidden" id="nextBtn">Next</button>
+            <button class="next-btn hidden" id="finishBtn">Kết thúc</button>
+        </div>
+    </div>
+
+    <script>
+        // Biến toàn cục
+        let sentences = [];
+        let currentSentenceIndex = 0;
+        let currentRound = 2; // Luôn là vòng 2 (hiện VN gõ EN)
+        
+        let currentSentence = null;
+        let currentWords = [];
+        let currentFirstLetters = [];
+        let resultProgress = [];
+        let currentWordIndex = 0;
+        let isVnVisible = true; // Luôn hiện VN
+        let isEnVisible = false;
+        let speechRate = parseFloat(localStorage.getItem('speechRate') || '1.0');
+        let isCompleted = false;
+        let hasSpoken = false;
+
+        // Lưu kết quả thực tế của từng câu
+        let round2Results = {};
+
+        // Đối tượng ánh xạ các phím thường bị nhầm lẫn
+        const adjacentKeys = {
+            'q': ['w', 'a', 's'],
+            'w': ['q', 'e', 'a', 's', 'd'],
+            'e': ['w', 'r', 's', 'd', 'f'],
+            'r': ['e', 't', 'd', 'f', 'g'],
+            't': ['r', 'y', 'f', 'g', 'h'],
+            'y': ['t', 'u', 'g', 'h', 'j'],
+            'u': ['y', 'i', 'h', 'j', 'k'],
+            'i': ['u', 'o', 'j', 'k', 'l'],
+            'o': ['i', 'p', 'k', 'l'],
+            'p': ['o', 'l'],
+            'a': ['q', 'w', 's', 'z', 'x'],
+            's': ['q', 'w', 'e', 'a', 'd', 'z', 'x', 'c'],
+            'd': ['w', 'e', 'r', 's', 'f', 'x', 'c', 'v'],
+            'f': ['e', 'r', 't', 'd', 'g', 'c', 'v', 'b'],
+            'g': ['r', 't', 'y', 'f', 'h', 'v', 'b', 'n'],
+            'h': ['t', 'y', 'u', 'g', 'j', 'b', 'n', 'm'],
+            'j': ['y', 'u', 'i', 'h', 'k', 'n', 'm'],
+            'k': ['u', 'i', 'o', 'j', 'l', 'm'],
+            'l': ['i', 'o', 'p', 'k'],
+            'z': ['a', 's', 'x'],
+            'x': ['a', 's', 'd', 'z', 'c'],
+            'c': ['s', 'd', 'f', 'x', 'v'],
+            'v': ['d', 'f', 'g', 'c', 'b'],
+            'b': ['f', 'g', 'h', 'v', 'n'],
+            'n': ['g', 'h', 'j', 'b', 'm'],
+            'm': ['h', 'j', 'k', 'n']
+        };
+
+        // DOM Elements
+        const meaningElement = document.getElementById('meaning');
+        const fullSentenceElement = document.getElementById('fullSentence');
+        const phoneticElement = document.getElementById('phonetic');
+        const inputDisplayElement = document.getElementById('inputDisplay');
+        const hiddenInput = document.getElementById('hiddenInput');
+        const speakBtn = document.getElementById('speakBtn');
+        const vnBtn = document.getElementById('vnBtn');
+        const enBtn = document.getElementById('enBtn');
+        const sessionStatsElement = document.getElementById('sessionStats');
+        const nextBtn = document.getElementById('nextBtn');
+        const finishBtn = document.getElementById('finishBtn');
+        const speedBtn = document.getElementById('speedBtn');
+        const dropdown = document.querySelector('.dropdown');
+        const speedOptions = document.querySelectorAll('.dropdown-content button');
+
+        // Lấy tham số từ URL
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Cập nhật thống kê
+        function updateSessionStats() {
+            const totalSentences = sentences.length;
+            const currentSentenceNum = currentSentenceIndex + 1;
+            
+            let correctCount = 0;
+            let wrongCount = 0;
+            
+            // Tính kết quả thực tế từ round2Results
+            Object.values(round2Results).forEach(result => {
+                const perfectCount = result.perfectCount;
+                const errorCount = result.errorCount;
+                
+                if (errorCount === 0) {
+                    correctCount++;
+                } else {
+                    wrongCount++;
+                }
+            });
+            
+            sessionStatsElement.textContent = `${totalSentences}/${currentSentenceNum}/${correctCount}r/${wrongCount}w`;
+        }
+
+        // Khởi tạo ứng dụng
+        function initApp() {
+            const sentencesParam = getUrlParam('sentences');
+            if (!sentencesParam) {
+                showError('Không có dữ liệu câu');
+                return;
+            }
+
+            try {
+                sentences = JSON.parse(decodeURIComponent(sentencesParam));
+                if (sentences.length === 0) {
+                    showError('Danh sách câu trống');
+                    return;
+                }
+                loadCurrentSentence();
+            } catch (error) {
+                showError('Dữ liệu câu không hợp lệ');
+                return;
+            }
+
+            // Cập nhật tốc độ đọc
+            speedBtn.textContent = `${speechRate}x`;
+
+            // Thêm event listeners
+            document.addEventListener('keydown', handleKeyPress);
+            inputDisplayElement.addEventListener('click', focusHiddenInput);
+            speakBtn.addEventListener('click', speakSentence);
+            vnBtn.addEventListener('click', toggleVnDisplay);
+            enBtn.addEventListener('click', toggleEnDisplay);
+            nextBtn.addEventListener('click', goToNextSentence);
+            finishBtn.addEventListener('click', finishSession);
+            
+            // Xử lý input ẩn
+            hiddenInput.addEventListener('input', handleHiddenInput);
+
+            // Speed options
+            speedOptions.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    speechRate = parseFloat(this.getAttribute('data-speed'));
+                    speedBtn.textContent = `${speechRate}x`;
+                    localStorage.setItem('speechRate', speechRate.toString());
+                    dropdown.classList.remove('active');
+                });
+            });
+            
+            // Đóng dropdown khi click ra ngoài
+            document.addEventListener('click', function(e) {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+            
+            // Toggle dropdown
+            speedBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
+            });
+
+            // Focus input ẩn ngay lập tức để bàn phím hiện lên
+            setTimeout(focusHiddenInput, 100);
+        }
+
+        // Tải câu hiện tại
+        function loadCurrentSentence() {
+            currentSentence = sentences[currentSentenceIndex];
+            isCompleted = false;
+            hasSpoken = false;
+            nextBtn.classList.add('hidden');
+            finishBtn.classList.add('hidden');
+
+            meaningElement.textContent = currentSentence.vn || currentSentence.m || '';
+            fullSentenceElement.textContent = currentSentence.en || currentSentence.w || '';
+            phoneticElement.textContent = currentSentence.po || currentSentence.p || '';
+
+            // Luôn hiển thị tiếng Việt (vòng 2)
+            meaningElement.classList.remove('hidden');
+            fullSentenceElement.classList.add('hidden');
+            phoneticElement.classList.add('hidden');
+            isVnVisible = true;
+            isEnVisible = false;
+            vnBtn.classList.add('active');
+            enBtn.classList.remove('active');
+
+            // Tách câu và chuẩn bị dữ liệu
+            currentWords = (currentSentence.en || currentSentence.w || '').split(' ');
+            currentFirstLetters = currentWords.map(word => word.charAt(0).toLowerCase());
+
+            resultProgress = Array(currentWords.length).fill(0);
+            currentWordIndex = 0;
+
+            updateInputDisplay();
+            updateSessionStats();
+        }
+
+        // Cập nhật hiển thị input
+        function updateInputDisplay() {
+            inputDisplayElement.innerHTML = '';
+
+            currentWords.forEach((word, index) => {
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'word';
+                const state = resultProgress[index];
+                const isCurrent = index === currentWordIndex && !isCompleted;
+
+                switch (state) {
+                    case 1: // đúng ngay
+                        wordSpan.textContent = word;
+                        wordSpan.style.color = '#4caf50';
+                        wordSpan.style.borderColor = '#2d5a2d';
+                        wordSpan.style.background = '#1a331a';
+                        break;
+                    case 2: // sai
+                        wordSpan.textContent = '_'.repeat(word.length);
+                        wordSpan.style.color = '#f44336';
+                        wordSpan.style.borderColor = '#5a2d2d';
+                        wordSpan.style.background = '#331a1a';
+                        break;
+                    case 3: // sửa sai
+                        wordSpan.textContent = word;
+                        wordSpan.style.color = '#f44336';
+                        wordSpan.style.borderColor = '#5a2d2d';
+                        wordSpan.style.background = '#1a1a1a';
+                        break;
+                    case 0: // chưa gõ
+                    default:
+                        wordSpan.textContent = '_'.repeat(word.length);
+                        wordSpan.style.color = '#666';
+                        wordSpan.style.borderColor = '#333';
+                        wordSpan.style.background = '#1a1a1a';
+                        break;
+                }
+
+                if (isCurrent) wordSpan.classList.add('current');
+                inputDisplayElement.appendChild(wordSpan);
+                if (index < currentWords.length - 1)
+                    inputDisplayElement.appendChild(document.createTextNode(' '));
+            });
+
+            // Kiểm tra hoàn thành câu
+            const allTyped = !resultProgress.includes(0);
+            if (allTyped && !isCompleted) {
+                isCompleted = true;
+                
+                // Lưu kết quả THỰC TẾ vào round2Results
+                const perfectCount = resultProgress.filter(v => v === 1).length;
+                const errorCount = resultProgress.filter(v => v === 2 || v === 3).length;
+                
+                round2Results[currentSentenceIndex] = {
+                    wordResults: resultProgress.slice(),
+                    wordCount: currentWords.length,
+                    perfectCount: perfectCount,
+                    errorCount: errorCount
+                };
+                
+                // Hiển thị phiên âm khi hoàn thành câu
+                if (currentSentence.po || currentSentence.p) {
+                    phoneticElement.textContent = currentSentence.po || currentSentence.p;
+                    phoneticElement.classList.remove('hidden');
+                }
+                
+                // Hiển thị nút tiếp theo
+                if (currentSentenceIndex < sentences.length - 1) {
+                    nextBtn.classList.remove('hidden');
+                } else {
+                    finishBtn.classList.remove('hidden');
+                }
+                
+                updateSessionStats();
+            }
+        }
+
+        // Xử lý gõ phím với khả năng chấp nhận phím gần kề
+        function handleTyping(typedChar) {
+            if (currentWordIndex >= currentWords.length || isCompleted) return;
+
+            const correctChar = currentFirstLetters[currentWordIndex];
+            let isCorrect = typedChar === correctChar;
+
+            // Nếu gõ sai nhưng là phím gần kề thì vẫn tính là đúng
+            if (!isCorrect && adjacentKeys[correctChar] && adjacentKeys[correctChar].includes(typedChar)) {
+                isCorrect = true;
+            }
+
+            const currentState = resultProgress[currentWordIndex];
+
+            if (currentState === 0) {
+                // Lần đầu gõ
+                resultProgress[currentWordIndex] = isCorrect ? 1 : 2;
+                if (isCorrect) currentWordIndex++;
+            } 
+            else if (currentState === 2 && isCorrect) {
+                // Đã sai rồi, giờ gõ đúng → trạng thái 3
+                resultProgress[currentWordIndex] = 3;
+                currentWordIndex++;
+            } 
+            else if ((currentState === 1 || currentState === 3) && isCorrect) {
+                // Nếu đã đúng hoặc sửa đúng → sang từ kế
+                currentWordIndex++;
+            }
+
+            updateInputDisplay();
+            focusHiddenInput();
+        }
+
+        // Xử lý phím từ người dùng
+        function handleKeyPress(event) {
+            if (event.key.length === 1 && /[a-zA-Z]/.test(event.key)) {
+                handleTyping(event.key.toLowerCase());
+                event.preventDefault();
+            }
+        }
+
+        // Xử lý input ẩn
+        function handleHiddenInput(event) {
+            const value = event.target.value.toLowerCase();
+            if (value.length > 0 && !isCompleted) {
+                handleTyping(value.charAt(0));
+                event.target.value = '';
+            }
+        }
+
+        // Focus input ẩn
+        function focusHiddenInput() {
+            if (!isCompleted) {
+                hiddenInput.focus();
+            }
+        }
+
+        // Chuyển đến câu tiếp theo
+        function goToNextSentence() {
+            window.speechSynthesis.cancel();
+            if (currentSentenceIndex < sentences.length - 1) {
+                currentSentenceIndex++;
+                loadCurrentSentence();
+            }
+            focusHiddenInput();
+        }
+
+        // Kết thúc phiên học
+        function finishSession() {
+            // Tạo dữ liệu kết quả giả cho vòng 1 (tất cả đều đúng)
+            const round1Results = {};
+            sentences.forEach((sentence, index) => {
+                const wordCount = (sentence.en || sentence.w || '').split(' ').length;
+                round1Results[index] = {
+                    wordResults: Array(wordCount).fill(1), // Tất cả từ đều đúng
+                    wordCount: wordCount,
+                    perfectCount: wordCount,
+                    errorCount: 0
+                };
+            });
+
+            // Đảm bảo tất cả các câu đều có kết quả
+            sentences.forEach((sentence, index) => {
+                if (!round2Results[index]) {
+                    // Nếu câu chưa có kết quả (chưa hoàn thành), tạo kết quả mặc định (toàn sai)
+                    const wordCount = (sentence.en || sentence.w || '').split(' ').length;
+                    round2Results[index] = {
+                        wordResults: Array(wordCount).fill(2), // Tất cả từ đều sai
+                        wordCount: wordCount,
+                        perfectCount: 0,
+                        errorCount: wordCount
+                    };
+                }
+            });
+
+            const encodedResults = encodeURIComponent(JSON.stringify({
+                sentences: sentences,
+                roundResults: {
+                    1: round1Results, // Vòng 1 giả (tất cả đều đúng)
+                    2: round2Results  // Vòng 2 thực
+                }
+            }));
+            window.location.href = `save.html?results=${encodedResults}`;
+        }
+
+        // Hiển thị lỗi
+        function showError(message) {
+            inputDisplayElement.innerHTML = `
+                <div style="color: #f44336; text-align: center; padding: 40px;">
+                    <h3>❌ ${message}</h3>
+                    <button onclick="window.location.href='index.html'" style="margin-top: 15px; padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Quay về trang chủ
+                    </button>
+                </div>
+            `;
+        }
+
+        // Hiển thị/ẩn tiếng Việt
+        function toggleVnDisplay() {
+            if (!isCompleted && currentWordIndex < resultProgress.length && resultProgress[currentWordIndex] === 0) {
+                resultProgress[currentWordIndex] = 2;
+                updateInputDisplay();
+            }
+
+            isVnVisible = !isVnVisible;
+            if (isVnVisible) {
+                meaningElement.classList.remove('hidden');
+                vnBtn.classList.add('active');
+            } else {
+                meaningElement.classList.add('hidden');
+                vnBtn.classList.remove('active');
+            }
+        }
+
+        // Hiển thị/ẩn câu tiếng Anh
+        function toggleEnDisplay() {
+            if (!isCompleted && currentWordIndex < resultProgress.length && resultProgress[currentWordIndex] === 0) {
+                resultProgress[currentWordIndex] = 2;
+                updateInputDisplay();
+            }
+
+            isEnVisible = !isEnVisible;
+            if (isEnVisible) {
+                fullSentenceElement.classList.remove('hidden');
+                enBtn.classList.add('active');
+            } else {
+                fullSentenceElement.classList.add('hidden');
+                enBtn.classList.remove('active');
+            }
+        }
+
+        // Đọc câu tiếng Anh
+        function speakSentence() {
+            if (!currentSentence) return;
+            
+            const sentence = currentSentence.en || currentSentence.w;
+            if (!sentence) return;
+            
+            if (!('speechSynthesis' in window)) {
+                console.log('Trình duyệt không hỗ trợ Text-to-Speech');
+                return;
+            }
+
+            const utterance = new SpeechSynthesisUtterance(sentence);
+            utterance.lang = 'en-US';
+            utterance.rate = speechRate;
+            
+            hasSpoken = true;
+            window.speechSynthesis.cancel();
+            
+            try {
+                window.speechSynthesis.speak(utterance);
+            } catch (error) {
+                console.log('Lỗi phát âm thanh:', error);
+                hasSpoken = false;
+            }
+        }
+
+        // Khởi chạy ứng dụng
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

@@ -298,15 +298,13 @@
     <script>
         let resultsData = null;
         let updatedVocabularies = [];
-        let imperfectSentences = []; // Lưu các câu có kết quả không hoàn hảo
+        let imperfectSentences = [];
 
-        // Lấy tham số từ URL
         function getUrlParam(name) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(name);
         }
 
-        // Tính thời gian học tiếp theo
         function calculateNextTime(level) {
             const now = Date.now();
             const minute = 60 * 1000;
@@ -329,19 +327,15 @@
             return now + (level in intervals ? intervals[level] : intervals[10]);
         }
 
-        // Kiểm tra xem một vòng có pass không (với ngưỡng cho phép mới)
         function checkIfRoundPassed(roundData) {
             if (!roundData) return false;
             
             const { wordCount, errorCount } = roundData;
-            
-            // Ngưỡng sai cho phép mới: cứ 5 từ cho sai 1 từ
             let allowedErrors = Math.floor(wordCount / 5);
             
             return errorCount <= allowedErrors;
         }
 
-        // Xử lý kết quả và cập nhật level
         function processResults() {
             const resultsParam = getUrlParam('results');
             if (!resultsParam) return;
@@ -354,14 +348,12 @@
                 let totalUp = 0;
                 let totalDown = 0;
                 let totalSame = 0;
-                imperfectSentences = []; // Reset mảng câu sai
+                imperfectSentences = [];
 
-                // Xử lý từng câu
                 resultsData.processedResults = resultsData.sentences.map((sentence, index) => {
                     const round1Data = resultsData.roundResults[1][index];
                     const round2Data = resultsData.roundResults[2][index];
                     
-                    // Tìm câu trong vocabularies
                     const vocabIndex = vocabularies.findIndex(vocab => 
                         (vocab.en === sentence.en || vocab.w === sentence.en) &&
                         (vocab.vn === sentence.vn || vocab.m === sentence.vn)
@@ -376,13 +368,11 @@
                     if (vocabIndex !== -1) {
                         oldLevel = vocabularies[vocabIndex].l || 0;
                         
-                        // Kiểm tra kết quả cả 2 vòng với ngưỡng cho phép mới
                         round1Passed = checkIfRoundPassed(round1Data);
                         round2Passed = checkIfRoundPassed(round2Data);
                         
-                        // Quy tắc mới: cả 2 vòng đều pass mới lên level
                         if (round1Passed && round2Passed) {
-                            newLevel = Math.min(oldLevel + 1, 10); // Giới hạn level tối đa là 10
+                            newLevel = Math.min(oldLevel + 1, 10);
                             levelChange = 'up';
                             totalUp++;
                         } else {
@@ -395,11 +385,9 @@
                                 totalSame++;
                             }
                             
-                            // Thêm câu này vào danh sách câu sai để luyện tập lại
                             imperfectSentences.push(sentence);
                         }
 
-                        // Cập nhật vocabulary
                         vocabularies[vocabIndex].l = newLevel;
                         vocabularies[vocabIndex].lt = now;
                         vocabularies[vocabIndex].nt = calculateNextTime(newLevel);
@@ -417,11 +405,9 @@
                     };
                 });
 
-                // Lưu lại vocabularies đã cập nhật
                 updatedVocabularies = vocabularies;
                 localStorage.setItem('vocabularies', JSON.stringify(vocabularies));
 
-                // Thống kê tổng quan
                 resultsData.summary = {
                     total: resultsData.sentences.length,
                     up: totalUp,
@@ -435,7 +421,6 @@
             }
         }
 
-        // Hiển thị tổng kết
         function displaySummary() {
             const summaryElement = document.getElementById('resultsSummary');
             
@@ -473,7 +458,6 @@
             `;
         }
 
-        // Hàm hiển thị chi tiết từng từ
         function getWordDetails(roundData) {
             if (!roundData || !roundData.wordResults) return '';
             
@@ -497,7 +481,6 @@
             return html;
         }
 
-        // Hiển thị kết quả chi tiết
         function displayDetailedResults() {
             const resultsElement = document.getElementById('sentencesResults');
             
@@ -511,11 +494,9 @@
                 const round1Class = result.round1Passed ? 'round-perfect' : 'round-imperfect';
                 const round2Class = result.round2Passed ? 'round-perfect' : 'round-imperfect';
                 
-                // Hiển thị chi tiết từng từ
                 const wordDetails1 = getWordDetails(result.round1Data);
                 const wordDetails2 = getWordDetails(result.round2Data);
                 
-                // Tính ngưỡng cho phép mới
                 const wordCount = result.round2Data ? result.round2Data.wordCount : 0;
                 let allowedErrors = Math.floor(wordCount / 5);
                 
@@ -553,29 +534,24 @@
             }).join('');
         }
 
-        // Tiếp tục học
         function continueLearning() {
             window.location.href = 'choose.html';
         }
 
-        // Luyện tập lại các câu sai
         function retryImperfectSentences() {
             if (imperfectSentences.length > 0) {
                 const encodedSentences = encodeURIComponent(JSON.stringify(imperfectSentences));
-                window.location.href = `type.html?sentences=${encodedSentences}`;
+                window.location.href = `typwr.html?sentences=${encodedSentences}`;
             } else {
-                // Nếu không có câu sai, chuyển đến trang chọn câu
                 continueLearning();
             }
         }
 
-        // Khởi tạo
         function init() {
             processResults();
             displaySummary();
             displayDetailedResults();
 
-            // Hiển thị nút luyện tập lại nếu có câu sai
             if (imperfectSentences.length > 0) {
                 document.getElementById('retryButton').style.display = 'block';
             }
