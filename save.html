@@ -492,7 +492,7 @@
                         round2Passed = checkIfRoundPassed(round2Data);
                         
                         if (round1Passed && round2Passed) {
-                            newLevel = Math.min(oldLevel + 1, 10);
+                            newLevel = oldLevel + 1;
                             levelChange = 'up';
                             totalUp++;
                         } else {
